@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Die Poller-Pumper retten Weihnachten - Johannes Heinrich 2025</title>
+    <title>Die Poller-Pumper retten Weihnachten (Mobile)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -52,6 +52,38 @@
             display: block;
             width: 100%;
             height: 100%;
+        }
+
+        /* NEWSTICKER MOBILE STYLES */
+        #news-ticker {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 25px; /* Etwas kleiner für Mobile */
+            background: rgba(0, 0, 0, 0.85);
+            color: #f1c40f;
+            font-family: 'Arial', sans-serif;
+            font-weight: bold;
+            font-size: 12px; /* Gut lesbar auf kleinen Screens */
+            line-height: 25px;
+            white-space: nowrap;
+            overflow: hidden;
+            border-top: 1px solid #c0392b;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #news-content {
+            display: inline-block;
+            padding-left: 100%;
+            /* Sehr langsam für gute Lesbarkeit auf schmalen Screens */
+            animation: ticker 140s linear infinite;
+        }
+
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
         }
 
         #ui-layer {
@@ -160,7 +192,8 @@
 
         h1 { color: #e74c3c; line-height: 1.4; font-size: 16px; margin-bottom: 5px;}
         h2 { color: #f1c40f; font-size: 12px; margin-bottom: 10px; }
-        p { font-size: 8px; line-height: 1.6; max-width: 90%; margin-bottom: 10px; color: #ccc; }
+        p { font-size: 9px; line-height: 1.5; max-width: 95%; margin-bottom: 10px; color: #ccc; }
+        .story-text { color: #3498db; margin-bottom: 15px; font-style: italic;}
 
         .rules-grid {
             display: grid;
@@ -172,7 +205,7 @@
             background: rgba(255,255,255,0.1);
             padding: 10px;
             border-radius: 8px;
-            width: 90%;
+            width: 95%;
         }
         
         .rules-column h3 { color: #f1c40f; margin: 0 0 5px 0; font-size: 9px; border-bottom: 1px solid #555; padding-bottom: 2px;}
@@ -217,6 +250,13 @@
     <div id="game-container">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
         
+        <!-- NEWSTICKER -->
+        <div id="news-ticker">
+            <div id="news-content">
+                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Es kommt zu Verspätungen der Linie 2 wegen Glühwein auf den Gleisen +++ PFERSEE: Eine Horde Weihnachtswichtel beim Plätzchenbacken gesichtet +++ ZOO: Rentiere versuchen ihre Verwandten zu befreien - Polizei vermutet Rudolf als Anführer +++ WETTER: 3cm Neuschnee: Chaos im Berufsverkehr erwartet +++ POLIZEI: Grinch in Oberhausen beim Schwarzfahren erwischt +++ MARKT: Glühweinvorräte kritisch niedrig - Nachschub per Drohne unterwegs +++ KULTUR: Augsburger Puppenkiste dementiert Gerüchte über streikende Marionetten +++ SPORT: Poller-Pumper Meisterschaft: Hubi hält den Rekord +++ LECHHAUSEN: Nikolaus steckte kurzzeitig im Kamin fest - Feuerwehr half mit Gleitgel +++ RATHAUSPLATZ: Turamichele besiegt Drachen diesmal mit Schneebällen +++ VERMISST: Wer hat den Sack vom Weihnachtsmann gesehen? Zuletzt am Kö gesehen +++ KULINARIK: Zwetschgendatschi offiziell zum Grundnahrungsmittel erklärt +++ HOCHZOLL: Schlitten auf der B2 geblitzt - 30 km/h zu schnell +++ FUGGEREI: Goldene Nüsse sind dieses Jahr aus Schokolade +++ STADTWERKE: "Bitte nicht die Poller lecken" warnt Pressesprecher +++ UNIVERSITÄT: Studie belegt: Glühwein hilft bei Prüfungsangst (nicht) +++ GÖGGINGEN: Hessing-Klinik meldet Anstieg an ausgerutschten Rentieren +++ EINKAUFEN: Innenstadt überfüllt: Menschenmassen auf der Jagd nach Last-Minute-Geschenken +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen für 2026 +++
+            </div>
+        </div>
+
         <div id="ui-layer">
             <div class="hud-top">
                 <div>LVL:<span id="level-display">1</span> SCR:<span id="score-display">0</span></div>
@@ -230,8 +270,14 @@
         </div>
 
         <div id="start-screen">
-            <h1>POLLER-PUMPER RETTEN WEIHNACHTEN<br>mobile</h1>
+            <h1>DIE POLLER-PUMPER<br>RETTEN WEIHNACHTEN</h1>
             
+            <p class="story-text">
+                Alarm in Augsburg! Die hydraulischen Poller sind eingefroren. 
+                Jetzt müssen <strong>DU und dein Team</strong> ran:
+                Pumpt die 350kg schweren Betonklötze von Hand, um Weihnachten zu retten!
+            </p>
+
             <div class="rules-grid">
                 <div class="rules-column">
                     <h3 style="color:#2ecc71">DURCHLASSEN (TAP)</h3>
@@ -250,9 +296,9 @@
 
             <p>
                 Tippe auf die Poller!<br>
-                Tipp: Handy drehen!
+                Tipp: Handy quer halten!
             </p>
-            <button id="start-btn" class="blink">STARTEN</button>
+            <button id="start-btn" class="blink">DIENST ANTRETEN</button>
         </div>
 
         <div id="game-over-screen" class="hidden">
@@ -885,4 +931,3 @@
 </script>
 </body>
 </html>
-
