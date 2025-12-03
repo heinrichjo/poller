@@ -215,7 +215,6 @@
                 <div class="rules-column">
                     <h3 style="color:#e74c3c">STOPPEN (POLLER HOCH)</h3>
                     <div class="rules-item"><span class="emoji-icon">🍺</span> Betrunkene</div>
-                    <!-- Removed Schwiegermütter -->
                     <div class="rules-item"><span class="emoji-icon">🗣️</span> Schwurbler</div>
                     <div class="rules-item"><span class="emoji-icon">👺</span> Diebe</div>
                     <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame</div>
@@ -255,7 +254,7 @@
     let score = 0;
     let mood = 100;
     let level = 1;
-    let eventsCount = 0; // Tracks total spawns for difficulty
+    let eventsCount = 0; 
     let frameCount = 0;
     let lastTime = 0;
 
@@ -270,7 +269,6 @@
     const ASSETS = {
         good: [
             { sprite: '🚋', name: 'Tram' },
-            // Removed Mandeln
             { sprite: '🍪', name: 'Lebkuchen' },
             { sprite: '🎁', name: 'Geschenk' },
             { sprite: '🍷', name: 'Glühwein' },
@@ -366,17 +364,15 @@
             this.x = x;
             this.y = y;
             this.id = id;
-            this.state = 'CLOSED'; // Default closed (safe but blocks traffic)
+            this.state = 'CLOSED'; 
             this.progress = 0;
             this.workingWorker = null;
         }
 
         draw() {
-            // Base color
             ctx.fillStyle = this.state === 'OPEN' ? '#27ae60' : '#7f8c8d';
             if (this.state === 'OPENING' || this.state === 'CLOSING') ctx.fillStyle = '#f39c12';
             
-            // Progress Bar
             if (this.progress > 0) {
                 ctx.fillStyle = '#f1c40f';
                 ctx.fillRect(this.x - 20, this.y - 45, 40, 6);
@@ -384,14 +380,12 @@
                 ctx.fillRect(this.x - 20, this.y - 45, 40 * (this.progress / PUMP_TIME), 6);
             }
 
-            // Sprite
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             let sprite = (this.state === 'CLOSED' || this.state === 'CLOSING') ? ASSETS.bollardClosed : ASSETS.bollardOpen;
             ctx.fillText(sprite, this.x, this.y);
             
-            // Label
             ctx.fillStyle = '#ecf0f1';
             ctx.font = '8px "Press Start 2P"';
             ctx.fillText(this.state === 'CLOSED' ? "ZU" : "AUF", this.x, this.y + 25);
@@ -412,13 +406,12 @@
         assignTask(bollard) {
             this.targetBollard = bollard;
             this.targetX = bollard.x;
-            this.targetY = bollard.y - 20; // Stand slightly above
+            this.targetY = bollard.y - 20; 
             this.state = 'MOVING';
             bollard.workingWorker = this;
         }
 
         update() {
-            // Movement
             const dx = this.targetX - this.x;
             const dy = this.targetY - this.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
@@ -434,11 +427,8 @@
                 }
             }
 
-            // Pumping Logic
             if (this.state === 'PUMPING' && this.targetBollard) {
                 let b = this.targetBollard;
-                
-                // Determine target state based on current state
                 if (b.state === 'CLOSED') b.state = 'OPENING';
                 if (b.state === 'OPEN') b.state = 'CLOSING';
 
@@ -462,26 +452,20 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             let sprite = this.state === 'PUMPING' ? ASSETS.workerBusy : ASSETS.worker;
-            
-            // Animation
             let offset = (this.state === 'MOVING' || this.state === 'PUMPING') ? Math.sin(frameCount * 0.5) * 3 : 0;
-            
             ctx.fillText(sprite, this.x, this.y + offset);
         }
     }
 
     class GameEntity {
         constructor() {
-            // Lane selection (0 = Top, 1 = Bottom)
             this.lane = Math.floor(Math.random() * 2);
             this.y = this.lane === 0 ? TRACK_Y_1 : TRACK_Y_2;
 
-            // Direction (0 = L->R, 1 = R->L)
             let dir = Math.floor(Math.random() * 2);
             this.direction = dir === 0 ? 1 : -1;
             this.x = dir === 0 ? -50 : canvas.width + 50;
 
-            // Type Selection
             let rand = Math.random();
             if (rand < 0.1) {
                 this.category = 'jump';
@@ -494,10 +478,8 @@
                 this.data = ASSETS.bad[Math.floor(Math.random() * ASSETS.bad.length)];
             }
 
-            // Speed calculation based on Level
-            // Level 1: Starts slow (1.5). Increases by 0.2 per level.
             let baseSpeed = 1.5 + ((level - 1) * 0.2);
-            if (this.data.name === 'Tram') baseSpeed *= 0.7; // Trams are significantly slower!
+            if (this.data.name === 'Tram') baseSpeed *= 0.7; 
             
             this.speed = baseSpeed;
             this.dead = false;
@@ -508,48 +490,30 @@
 
             this.x += this.speed * this.direction;
 
-            // MARKET ARRIVAL LOGIC
-            // If it's a GOOD item (and NOT a tram), it stays in the market (Center)
+            // MARKET ARRIVAL
             if (this.category === 'good' && this.data.name !== 'Tram') {
                 let distToCenter = Math.abs(this.x - MARKET_CENTER_X);
-                
-                // If it reaches roughly the center
                 if (distToCenter < 10) {
                     this.handleMarketArrival();
                     return;
                 }
             }
 
-            // COLLISION LOGIC
-            // Relevant Bollard depends on direction
-            // If L->R (Dir 1): First check LEFT Bollard (x=200), then RIGHT (x=600)
-            // If R->L (Dir -1): First check RIGHT Bollard (x=600), then LEFT (x=200)
-
-            // Find bollards in my lane
+            // COLLISION
             let myBollards = bollards.filter(b => Math.abs(b.y - this.y) < 20);
-            // Sort them: Left one is index 0, Right one is index 1
             myBollards.sort((a,b) => a.x - b.x); 
-            
-            // Interaction Zones
-            // 20px radius collision check
             
             if (this.category !== 'jump') {
                 myBollards.forEach(b => {
                     let dist = Math.abs(this.x - b.x);
-                    
-                    // Only interact if very close
                     if (dist < 25) {
-                        // Check if hitting the "face" of the bollard
                         if (b.state === 'CLOSED' || b.state === 'OPENING' || b.state === 'CLOSING') {
-                            // CRASH!
                             this.handleCrash(true);
                         }
                     }
                 });
             }
 
-            // BOUNDS CHECK (Leaving Screen)
-            // Only Trams, Bad guys and Jumpers reach here if they pass everything
             if (this.x > canvas.width + 60 || this.x < -60) {
                 this.dead = true;
                 this.handleExit();
@@ -558,11 +522,10 @@
 
         handleMarketArrival() {
             this.dead = true;
-            // Mood boost!
             mood = Math.min(100, mood + 10);
             score += 150;
             playSound('arrive');
-            createExplosion(this.x, this.y, '💖'); // Hearts
+            createExplosion(this.x, this.y, '💖'); 
             createFloatingText("ANGEKOMMEN!", this.x, this.y - 30, '#2ecc71');
             checkMood();
         }
@@ -572,7 +535,6 @@
             createExplosion(this.x, this.y, '💥');
 
             if (this.category === 'good') {
-                // BAD: Good thing crashed
                 mood -= 15;
                 playSound('crash');
                 createFloatingText("NEIN!", this.x, this.y - 30, '#e74c3c');
@@ -580,7 +542,6 @@
                     gameOver("Tramunfall! Der Verkehr ist zusammengebrochen.");
                 }
             } else if (this.category === 'bad') {
-                // GOOD: Bad thing stopped
                 score += 50;
                 playSound('success');
                 createFloatingText("GEBLOCKT!", this.x, this.y - 30, '#2ecc71');
@@ -590,35 +551,31 @@
         }
 
         handleExit() {
-            // Entity made it through the whole screen
             if (this.category === 'good') {
-                // Tram made it through
                 score += 100;
                 createFloatingText("TRAM FREI!", this.x - (50*this.direction), this.y, '#2ecc71');
             } else if (this.category === 'bad') {
-                // BAD! Enemy got through market
+                // PENALTY LOGIC HERE
                 mood -= 20;
+                score -= 100; // Deduct Score
+                if(score < 0) score = 0; // Optional clamping
                 playSound('crash');
-                createFloatingText("EINGEDRUNGEN!", this.x - (50*this.direction), this.y, '#e74c3c');
+                createFloatingText("EINGEDRUNGEN (-100)", this.x - (50*this.direction), this.y, '#e74c3c');
                 checkMood();
             } else {
-                // Reindeer
                 score += 10;
             }
         }
 
         draw() {
             if (this.dead) return;
-            
             ctx.save();
             ctx.translate(this.x, this.y);
-            if (this.direction === -1) ctx.scale(-1, 1); // Flip sprite
-            
+            if (this.direction === -1) ctx.scale(-1, 1);
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(this.data.sprite, 0, 0);
-            
             ctx.restore();
         }
     }
@@ -652,23 +609,17 @@
     }
 
     function drawBackground() {
-        // Snow / Asphalt
         ctx.fillStyle = '#34495e';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Safe Zone (Market) Visual
         ctx.fillStyle = '#2c3e50';
         ctx.fillRect(LEFT_BOLLARD_X, 0, RIGHT_BOLLARD_X - LEFT_BOLLARD_X, canvas.height);
         
-        // Tracks
         ctx.lineWidth = 6;
         ctx.strokeStyle = '#555';
         [TRACK_Y_1, TRACK_Y_2].forEach(y => {
             ctx.beginPath();
             ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
             ctx.stroke();
-            
-            // Rails details
             ctx.strokeStyle = '#7f8c8d';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -677,7 +628,6 @@
             ctx.stroke();
         });
 
-        // Market Decor in the middle
         ctx.font = '40px Arial';
         ctx.fillText('🎄', 400, 100);
         ctx.fillText('✨', 300, 450);
@@ -689,15 +639,13 @@
      */
 
     function init() {
-        // Create 4 Bollards
         bollards = [
-            new Bollard(LEFT_BOLLARD_X, TRACK_Y_1, 0), // Top Left
-            new Bollard(RIGHT_BOLLARD_X, TRACK_Y_1, 1), // Top Right
-            new Bollard(LEFT_BOLLARD_X, TRACK_Y_2, 2), // Bottom Left
-            new Bollard(RIGHT_BOLLARD_X, TRACK_Y_2, 3)  // Bottom Right
+            new Bollard(LEFT_BOLLARD_X, TRACK_Y_1, 0), 
+            new Bollard(RIGHT_BOLLARD_X, TRACK_Y_1, 1), 
+            new Bollard(LEFT_BOLLARD_X, TRACK_Y_2, 2), 
+            new Bollard(RIGHT_BOLLARD_X, TRACK_Y_2, 3)  
         ];
 
-        // Create 2 Workers in middle
         workers = [
             new Worker(1, 350, 250),
             new Worker(2, 450, 250)
@@ -717,9 +665,8 @@
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
 
-        // Find closest bollard
         let clickedBollard = null;
-        let minDist = 60; // Click radius
+        let minDist = 60; 
 
         bollards.forEach(b => {
             let d = Math.sqrt((clickX - b.x)**2 + (clickY - b.y)**2);
@@ -730,14 +677,9 @@
         });
 
         if (clickedBollard) {
-            // Already working on it?
             if (clickedBollard.workingWorker) return;
-
-            // Find closest IDLE worker
             let idleWorkers = workers.filter(w => w.state === 'IDLE');
-            
             if (idleWorkers.length > 0) {
-                // Sort by distance to bollard
                 idleWorkers.sort((a,b) => {
                     let da = Math.sqrt((a.x - clickedBollard.x)**2 + (a.y - clickedBollard.y)**2);
                     let db = Math.sqrt((b.x - clickedBollard.x)**2 + (b.y - clickedBollard.y)**2);
@@ -745,7 +687,6 @@
                 });
                 idleWorkers[0].assignTask(clickedBollard);
             } else {
-                // Visual feedback that workers are busy?
                 createFloatingText("ALLE BESCHÄFTIGT!", clickX, clickY, '#f1c40f');
             }
         }
@@ -754,7 +695,7 @@
     function checkLevelUp() {
         if (eventsCount > 0 && eventsCount % 10 === 0) {
             level++;
-            eventsCount++; // Prevent multiple triggers
+            eventsCount++; 
             createFloatingText("LEVEL UP!", 400, 250, '#e67e22');
             playSound('levelup');
         }
@@ -768,12 +709,7 @@
     }
 
     function spawnLogic() {
-        // Spawn rate increases with level
-        // Base: 200 frames (approx 3.3s) at level 1.
-        // Decrease by 20 frames per level.
-        // Min 40 frames.
         let rate = Math.max(40, 200 - (level * 20));
-        
         if (frameCount % rate === 0) {
             entities.push(new GameEntity());
             eventsCount++;
@@ -783,18 +719,15 @@
 
     function gameLoop(timestamp) {
         if (!lastTime) lastTime = timestamp;
-        const deltaTime = timestamp - lastTime; // unused but good for ref
         lastTime = timestamp;
 
         if (gameRunning) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
 
-            // Logic
             frameCount++;
             spawnLogic();
 
-            // Render/Update Layers
             bollards.forEach(b => b.draw());
             
             entities.forEach((e, i) => {
@@ -808,7 +741,6 @@
                 w.draw();
             });
 
-            // Particles
             particles.forEach((p, i) => {
                 if (p.type === 'particle') {
                     p.x += p.vx; p.y += p.vy; p.life -= 0.05;
@@ -826,7 +758,6 @@
                 if (p.life <= 0) particles.splice(i, 1);
             });
 
-            // HUD
             document.getElementById('score-display').innerText = Math.floor(score);
             document.getElementById('level-display').innerText = level;
         }
@@ -854,7 +785,6 @@
         document.getElementById('mood-fill').style.width = '100%';
         document.getElementById('mood-fill').style.backgroundColor = '#27ae60';
         
-        // Reset Logic
         workers[0].x = 350; workers[0].y = 250; workers[0].state='IDLE'; workers[0].targetBollard=null;
         workers[1].x = 450; workers[1].y = 250; workers[1].state='IDLE'; workers[1].targetBollard=null;
         
@@ -872,7 +802,6 @@
 
     document.getElementById('restart-btn').addEventListener('click', startGame);
 
-    // Initial render
     ctx.fillStyle = '#2c3e50';
     ctx.fillRect(0,0,800,500);
 
