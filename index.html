@@ -63,6 +63,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            z-index: 5; /* Base UI */
         }
 
         .hud-top {
@@ -91,13 +92,15 @@
         #pause-btn { background: #f39c12; }
         #quit-btn { background: #c0392b; }
 
-        /* NEWSTICKER */
+        /* NEWSTICKER - Hoher Z-Index damit sichtbar über Pause */
         #news-ticker {
             position: absolute; bottom: 40px; left: 0; width: 100%; height: 25px;
             background: rgba(0, 0, 0, 0.85); color: #f1c40f;
             font-family: 'Arial', sans-serif; font-weight: bold; font-size: 12px;
             line-height: 25px; white-space: nowrap; overflow: hidden;
-            border-top: 1px solid #c0392b; z-index: 5; pointer-events: none;
+            border-top: 1px solid #c0392b; 
+            z-index: 20; /* Überlagert Overlay (z-10) */
+            pointer-events: none;
         }
         #news-content { display: inline-block; padding-left: 100%; animation: ticker 140s linear infinite; }
         @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
@@ -201,7 +204,7 @@
 
         <div id="news-ticker">
             <div id="news-content">
-                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Linie 2 verspätet +++ ZOO: Rentiere ausgebrochen +++ POLIZEI: Grinch beim Schwarzfahren erwischt +++ MARKT: Glühweinvorräte kritisch +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen +++ AUGSBURG: Poller klemmt erneut - "Wir brauchen mehr Schmiermittel" +++
+                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Linie 2 verspätet +++ ZOO: Rentiere ausgebrochen +++ SKANDAL: Bürgermeisterin beim Schwarzfahren erwischt +++ MARKT: Glühweinvorräte kritisch +++ NATUR: Rentiere an der Wertach entdeckt +++ ARCHITEKTUR: Bauruine neben dem Hotelturm hofft auf ein Weihnachtswunder +++ POLITIK: Rekordverdächtige Zustimmungsraten für den König von Augsburg +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen +++ AUGSBURG: Poller klemmt erneut - "Wir brauchen mehr Schmiermittel" +++
             </div>
         </div>
 
@@ -222,14 +225,15 @@
                 <div class="rules-column">
                     <h3 style="color:#2ecc71">DURCHLASSEN (TAP)</h3>
                     <div class="rules-item"><span class="emoji-icon">🚋</span> Tram</div>
-                    <div class="rules-item"><span class="emoji-icon">🍷</span> Essen/Wein</div>
-                    <div class="rules-item"><span class="emoji-icon">🎁</span> Geschenke</div>
+                    <div class="rules-item"><span class="emoji-icon">🍷</span> Essen/Wein <span class="emoji-icon">🍪</span></div>
+                    <div class="rules-item"><span class="emoji-icon">🎁</span> Geschenke <span class="emoji-icon">🎅</span></div>
                     <div class="rules-item"><span class="emoji-icon">👼</span> Christkind</div>
                 </div>
                 <div class="rules-column">
                     <h3 style="color:#e74c3c">STOPPEN (ZU)</h3>
                     <div class="rules-item"><span class="emoji-icon">🥴</span> Suffkis</div>
                     <div class="rules-item"><span class="emoji-icon">👺</span> Diebe</div>
+                    <div class="rules-item"><span class="emoji-icon">🗣️</span> Schwurbler</div>
                     <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame</div>
                 </div>
             </div>
@@ -649,7 +653,15 @@
             checkMood();
         }
         exit() {
-            if(this.category==='good') { score+=100; createFloatingText("FREI!",this.x,this.y,'#2ecc71'); }
+            if(this.category==='good') { 
+                score+=100; 
+                if(this.data.name === 'Tram') {
+                    score += 50; // Bonus for tram
+                    createFloatingText("TRAM DURCH! +150", this.x - (50*this.direction), this.y, '#2ecc71');
+                } else {
+                    createFloatingText("FREI!",this.x,this.y,'#2ecc71'); 
+                }
+            }
             else if(this.category==='bad') { mood-=20; score=Math.max(0,score-100); checkMood(); }
         }
         draw() {
