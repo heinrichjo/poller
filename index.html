@@ -280,6 +280,7 @@
         <div id="game-over-screen" class="screen-overlay hidden">
             <h1 id="go-title">SCHICHTENDE!</h1>
             <h2 id="final-reason">...</h2>
+            <p style="margin-top:10px;">Frohe Weihnachten!</p>
             <p>Score: <span id="final-score">0</span></p>
             <button class="main-btn" onclick="location.reload()">NEUER DIENST</button>
         </div>
@@ -320,15 +321,14 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Config
+    // Config - MOVED BOLLARDS CLOSER TO CENTER (280/520)
     const TRACK_Y_1 = 180, TRACK_Y_2 = 350;
-    const LEFT_BOLLARD_X = 200, RIGHT_BOLLARD_X = 600;
+    const LEFT_BOLLARD_X = 280, RIGHT_BOLLARD_X = 520;
     const MARKET_CENTER_X = 400;
     const WORKER_SPEED_BASE = 250; 
     const PUMP_TIME = 0.5; 
     const MOVE_TIME = 0.7; 
-    // Increased base speed for Game Entities because time-based movement needs px/sec
-    const ENTITY_SPEED_BASE = 80; // 80 pixels per second start speed
+    const ENTITY_SPEED_BASE = 80;
 
     // State
     let lastTime = 0;
@@ -563,6 +563,7 @@
             }
         }
         handleAugsburg(b, dt) {
+            // Logic: PUMP_UP -> MOVE_SIDE (Y-Axis) -> OPEN
             if (b.state === 'CLOSED') b.state = 'PUMP_UP'; else if (b.state === 'OPEN') b.state = 'MOVE_BACK';
             
             if (b.state === 'PUMP_UP') {
@@ -622,26 +623,8 @@
             this.x += this.speed * this.direction * dt;
 
             // --- ZEN MODE AI ---
-            if (gameMode === 'HYDRAULIC' && !this.dead) {
-                let myBollard = bollards.find(b => Math.abs(b.y - this.y) < 20 && Math.abs(b.originX - (this.direction===1 ? LEFT_BOLLARD_X : RIGHT_BOLLARD_X)) < 20);
-                if (myBollard) {
-                    let dist = (this.x - myBollard.originX) * -this.direction; // Dist to bollard
-                    let needsOpen = (this.category === 'good');
-                    if (this.category === 'jump') needsOpen = false;
-
-                    // Open/Close ahead
-                    if (dist > 20 && dist < 180) {
-                        if (needsOpen && myBollard.state === 'CLOSED') myBollard.state = 'OPENING';
-                        if (!needsOpen && myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
-                    }
-                    // Close behind
-                    let distBehind = (this.x - myBollard.originX) * this.direction;
-                    if (this.category === 'good' && distBehind > 50 && distBehind < 100) {
-                         if (myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
-                    }
-                }
-            }
-
+            // Zen Mode logic is now handled in gameLoop to see ALL entities
+            
             if ((this.category==='good' && this.data.name!=='Tram') || this.category==='bad') {
                 if(Math.abs(this.x-MARKET_CENTER_X)<10) { 
                     this.category==='good' ? this.arrive() : this.intrude(); 
@@ -715,6 +698,66 @@
 
     let spawnTimer = 0;
 
+    function updateZenAI() {
+        if (gameMode !== 'HYDRAULIC') return;
+        
+        bollards.forEach(b => {
+            // Find relevant entities on this lane
+            let relevantEntities = entities.filter(e => Math.abs(e.y - b.y) < 20 && !e.dead);
+            let closest = null;
+            let minDist = 9999;
+
+            relevantEntities.forEach(e => {
+                // Check dist to BOLLARD ORIGIN
+                let dist = (b.originX - e.x) * e.direction; // Positive if approaching
+                // Logic: 
+                // Approaching (>0) AND close (<200) -> Open
+                // Leaving (<0) AND close (>-100) -> Keep Open (for Tram exit)
+                
+                // We want the entity that dictates the state. Usually the closest one.
+                // But we must prioritize "inside" entities leaving if they are Trams.
+                
+                // Simple logic: Is there ANY good entity needing passage nearby?
+                // Passage needed if:
+                // 1. Approaching (dist > 0 && dist < 200)
+                // 2. Leaving (dist < 0 && dist > -100) (Tram leaving market)
+                
+                // Absolute distance check for general proximity
+                let absDist = Math.abs(b.originX - e.x);
+                
+                if (absDist < minDist) {
+                    minDist = absDist;
+                    closest = e;
+                }
+            });
+
+            if (closest) {
+                // Determine if we need to open based on the closest entity
+                let dist = (b.originX - closest.x) * closest.direction;
+                
+                let isGood = (closest.category === 'good' && closest.category !== 'jump');
+                let isTramLeaving = (isGood && dist < 0 && dist > -100);
+                let isApproaching = (dist > 20 && dist < 220);
+
+                if (isGood) {
+                    if (isApproaching || isTramLeaving) {
+                        if (b.state === 'CLOSED') b.state = 'OPENING';
+                    } else if (dist < -100 || dist > 250) {
+                        if (b.state === 'OPEN') b.state = 'CLOSING';
+                    }
+                } else {
+                    // Bad guy
+                    if (isApproaching) {
+                        if (b.state === 'OPEN') b.state = 'CLOSING';
+                    }
+                }
+            } else {
+                // No entities nearby, default close
+                if (b.state === 'OPEN') b.state = 'CLOSING';
+            }
+        });
+    }
+
     function gameLoop(timestamp) {
         if (!lastTime) lastTime = timestamp;
         const dt = (timestamp - lastTime) / 1000; 
@@ -744,6 +787,7 @@
             else {
                 if(gameMode==='HYDRAULIC') {
                     autoWinTimer += safeDt;
+                    updateZenAI(); 
                     if(autoWinTimer > 180) { gameOver("Hydraulik-Sieg! Alle happy."); document.getElementById('go-title').innerText="GEWONNEN"; }
                 }
                 
@@ -805,7 +849,7 @@
 
     function gameOver(reason) {
         gameState='GAMEOVER';
-        document.getElementById('final-reason').innerText=reason;
+        document.getElementById('final-reason').innerText=reason + " Frohe Weihnachten!";
         document.getElementById('final-score').innerText=Math.floor(score);
         document.getElementById('game-over-screen').classList.remove('hidden');
     }
