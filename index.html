@@ -90,6 +90,39 @@
             transition: width 0.2s, background-color 0.2s;
         }
 
+        /* NEWSTICKER STYLES */
+        #news-ticker {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #f1c40f;
+            font-family: 'Arial', sans-serif; /* Lesbarer für Ticker */
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 30px;
+            white-space: nowrap;
+            overflow: hidden;
+            border-top: 2px solid #c0392b;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #news-content {
+            display: inline-block;
+            padding-left: 100%;
+            /* Langsamer: 120s statt 60s */
+            animation: ticker 120s linear infinite;
+        }
+
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-100%, 0, 0); }
+        }
+
+        /* LEGEND STYLES */
         #legend {
             width: 800px;
             background: rgba(0,0,0,0.8);
@@ -109,18 +142,12 @@
         }
         .legend-icons {
             font-size: 18px;
+            letter-spacing: 5px;
         }
         .good { color: #2ecc71; }
         .bad { color: #e74c3c; }
         .neutral { color: #f1c40f; }
 
-        #footer {
-            margin-top: 10px;
-            font-size: 10px;
-            color: #bdc3c7;
-            text-align: right;
-            width: 800px;
-        }
 
         #start-screen, #game-over-screen {
             position: absolute;
@@ -181,6 +208,14 @@
         @keyframes blinker { 50% { opacity: 0; } }
         .hidden { display: none !important; }
 
+        #footer {
+            margin-top: 10px;
+            font-size: 10px;
+            color: #bdc3c7;
+            text-align: right;
+            width: 800px;
+        }
+
     </style>
 </head>
 <body>
@@ -189,6 +224,13 @@
     <div id="game-container">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
         
+        <!-- NEWSTICKER -->
+        <div id="news-ticker">
+            <div id="news-content">
+                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Es kommt zu Verspätungen der Linie 2 wegen Glühwein auf den Gleisen +++ PFERSEE: Eine Horde Weihnachtswichtel beim Plätzchenbacken gesichtet +++ ZOO: Rentiere versuchen ihre Verwandten zu befreien - Polizei vermutet Rudolf als Anführer +++ WETTER: 3cm Neuschnee: Chaos im Berufsverkehr erwartet +++ POLIZEI: Grinch in Oberhausen beim Schwarzfahren erwischt +++ MARKT: Glühweinvorräte kritisch niedrig - Nachschub per Drohne unterwegs +++ KULTUR: Augsburger Puppenkiste dementiert Gerüchte über streikende Marionetten +++ SPORT: Poller-Pumper Meisterschaft: Hubi hält den Rekord +++ LECHHAUSEN: Nikolaus steckte kurzzeitig im Kamin fest - Feuerwehr half mit Gleitgel +++ RATHAUSPLATZ: Turamichele besiegt Drachen diesmal mit Schneebällen +++ VERMISST: Wer hat den Sack vom Weihnachtsmann gesehen? Zuletzt am Kö gesehen +++ KULINARIK: Zwetschgendatschi offiziell zum Grundnahrungsmittel erklärt +++ HOCHZOLL: Schlitten auf der B2 geblitzt - 30 km/h zu schnell +++ FUGGEREI: Goldene Nüsse sind dieses Jahr aus Schokolade +++ STADTWERKE: "Bitte nicht die Poller lecken" warnt Pressesprecher +++ UNIVERSITÄT: Studie belegt: Glühwein hilft bei Prüfungsangst (nicht) +++ GÖGGINGEN: Hessing-Klinik meldet Anstieg an ausgerutschten Rentieren +++ EINKAUFEN: Innenstadt überfüllt: Menschenmassen auf der Jagd nach Last-Minute-Geschenken +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen für 2026 +++
+            </div>
+        </div>
+
         <div id="ui-layer">
             <div class="hud-top">
                 <div>LVL: <span id="level-display">1</span> | SCORE: <span id="score-display">0</span></div>
@@ -235,6 +277,22 @@
             <h2 id="final-reason">Grund: Unbekannt</h2>
             <p>Level: <span id="final-level">1</span> | Score: <span id="final-score">0</span></p>
             <button id="restart-btn">NEUE SCHICHT</button>
+        </div>
+    </div>
+
+    <!-- LEGENDE -->
+    <div id="legend">
+        <div class="legend-section">
+            <span class="good">DURCHLASSEN</span>
+            <div class="legend-icons">🚋 🍪 🎁 🍷 👼 🎅</div>
+        </div>
+        <div class="legend-section">
+            <span class="neutral">NEUTRAL</span>
+            <div class="legend-icons">🦌</div>
+        </div>
+        <div class="legend-section">
+            <span class="bad">STOPPEN</span>
+            <div class="legend-icons">🍺 🗣️ 👺 👹</div>
         </div>
     </div>
 
@@ -491,7 +549,6 @@
             this.x += this.speed * this.direction;
 
             // MARKET ARRIVAL CHECK
-            // Good items (except Tram) AND Bad items now target the market center
             if ((this.category === 'good' && this.data.name !== 'Tram') || this.category === 'bad') {
                 let distToCenter = Math.abs(this.x - MARKET_CENTER_X);
                 if (distToCenter < 10) {
@@ -570,7 +627,6 @@
                 score += 100;
                 createFloatingText("TRAM FREI!", this.x - (50*this.direction), this.y, '#2ecc71');
             } else if (this.category === 'bad') {
-                // This shouldn't happen anymore as they stop at market, but safe fallback
                 mood -= 20;
                 score -= 100; 
                 if(score < 0) score = 0; 
