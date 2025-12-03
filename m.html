@@ -504,7 +504,8 @@
                 this.data = ASSETS.bad[Math.floor(Math.random() * ASSETS.bad.length)];
             }
 
-            let baseSpeed = 1.5 + ((level - 1) * 0.2);
+            // Slower start for Mobile (1.0 instead of 1.5)
+            let baseSpeed = 1.0 + ((level - 1) * 0.2);
             if (this.data.name === 'Tram') baseSpeed *= 0.7; 
             
             this.speed = baseSpeed;
@@ -765,7 +766,8 @@
     }
 
     function spawnLogic() {
-        let rate = Math.max(40, 200 - (level * 20));
+        // Slower start for Mobile (240 frames initial rate instead of 200)
+        let rate = Math.max(40, 240 - (level * 20));
         if (frameCount % rate === 0) {
             entities.push(new GameEntity());
             eventsCount++;
