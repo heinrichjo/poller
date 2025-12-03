@@ -2,8 +2,8 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Die Poller-Pumper retten Weihnachten - Johannes Heinrich 2025</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Die Poller-Pumper retten Weihnachten (Mobile)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -15,22 +15,25 @@
             color: white;
             overflow: hidden;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            height: 100dvh;
+            width: 100vw;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        #scaler {
+            position: absolute;
+            transform-origin: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #game-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            position: relative;
-        }
-
-        #game-container {
             position: relative;
             width: 800px;
             height: 500px;
@@ -38,7 +41,6 @@
             border: 4px solid #c0392b;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             overflow: hidden;
-            cursor: crosshair;
         }
 
         canvas {
@@ -47,6 +49,7 @@
             height: 100%;
         }
 
+        /* UI ELEMENTS */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -54,310 +57,236 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
+            padding: 10px;
+            padding-top: max(25px, env(safe-area-inset-top)); 
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 15px;
-            box-sizing: border-box;
         }
 
         .hud-top {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             text-shadow: 2px 2px 0 #000;
             font-size: 14px;
             width: 100%;
-        }
-
-        .weihnachts-meter-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .weihnachts-meter {
-            width: 150px;
-            height: 15px;
-            background: #555;
-            border: 2px solid white;
-            position: relative;
-        }
-
-        .meter-fill {
-            width: 100%;
-            height: 100%;
-            background: #27ae60;
-            transition: width 0.2s, background-color 0.2s;
-        }
-
-        /* NEWSTICKER STYLES */
-        #news-ticker {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 30px;
-            background: rgba(0, 0, 0, 0.85);
-            color: #f1c40f;
-            font-family: 'Arial', sans-serif; /* Lesbarer für Ticker */
-            font-weight: bold;
-            font-size: 14px;
-            line-height: 30px;
-            white-space: nowrap;
-            overflow: hidden;
-            border-top: 2px solid #c0392b;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        #news-content {
-            display: inline-block;
-            padding-left: 100%;
-            /* Langsamer: 120s statt 60s */
-            animation: ticker 120s linear infinite;
-        }
-
-        @keyframes ticker {
-            0% { transform: translate3d(0, 0, 0); }
-            100% { transform: translate3d(-100%, 0, 0); }
-        }
-
-        /* LEGEND STYLES */
-        #legend {
-            width: 800px;
-            background: rgba(0,0,0,0.8);
-            border: 2px solid #7f8c8d;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-            font-size: 10px;
-            box-sizing: border-box;
-        }
-
-        .legend-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-        .legend-icons {
-            font-size: 18px;
-            letter-spacing: 5px;
-        }
-        .good { color: #2ecc71; }
-        .bad { color: #e74c3c; }
-        .neutral { color: #f1c40f; }
-
-
-        #start-screen, #game-over-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            z-index: 10;
             pointer-events: auto;
-            padding: 20px;
-            box-sizing: border-box;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 5px;
         }
 
-        h1 { color: #e74c3c; line-height: 1.4; font-size: 20px; margin-bottom: 10px;}
-        h2 { color: #f1c40f; font-size: 16px; margin-bottom: 15px; }
+        .weihnachts-meter { width: 150px; height: 15px; background: #555; border: 2px solid white; position: relative; }
+        .meter-fill { width: 100%; height: 100%; background: #27ae60; transition: width 0.2s; }
+
+        #pause-btn {
+            background: #f39c12; border: 2px solid #fff; color: white;
+            padding: 5px 10px; font-size: 10px; cursor: pointer; pointer-events: auto;
+        }
+
+        /* NEWSTICKER */
+        #news-ticker {
+            position: absolute; bottom: 40px; left: 0; width: 100%; height: 25px;
+            background: rgba(0, 0, 0, 0.85); color: #f1c40f;
+            font-family: 'Arial', sans-serif; font-weight: bold; font-size: 12px;
+            line-height: 25px; white-space: nowrap; overflow: hidden;
+            border-top: 1px solid #c0392b; z-index: 5; pointer-events: none;
+        }
+        #news-content { display: inline-block; padding-left: 100%; animation: ticker 140s linear infinite; }
+        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+
+        /* LEGEND */
+        #legend {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 40px;
+            background: #2c3e50; border-top: 2px solid #7f8c8d;
+            display: flex; justify-content: space-around; align-items: center;
+            font-size: 10px; z-index: 6; padding-bottom: max(5px, env(safe-area-inset-bottom));
+        }
+        .legend-section { display: flex; flex-direction: column; align-items: center; }
+        .good { color: #2ecc71; } .bad { color: #e74c3c; }
+
+        /* SCREENS */
+        .screen-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            z-index: 10; padding: 20px; box-sizing: border-box;
+        }
+        .hidden { display: none !important; }
+
+        h1 { color: #e74c3c; line-height: 1.4; font-size: 24px; margin-bottom: 10px;}
         p { font-size: 10px; line-height: 1.6; max-width: 600px; margin-bottom: 15px; color: #ccc; }
+        .story-text { color: #3498db; margin-bottom: 15px; font-style: italic;}
+        
+        .mode-select { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+
+        button {
+            background: #27ae60; color: white; border: none; padding: 10px 20px;
+            font-family: 'Press Start 2P', cursive; font-size: 12px;
+            cursor: pointer; border-bottom: 4px solid #1e8449; margin: 5px;
+        }
+        button:active { transform: translateY(4px); border-bottom: none; }
+        button.secondary { background: #7f8c8d; border-bottom: 4px solid #555; }
+        button.danger { background: #c0392b; border-bottom: 4px solid #922b21; }
 
         .rules-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 10px;
             text-align: left;
-            font-size: 10px;
+            font-size: 8px;
             background: rgba(255,255,255,0.1);
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
+            width: 95%;
         }
         
-        .rules-column h3 { color: #f1c40f; margin: 0 0 10px 0; font-size: 12px; border-bottom: 1px solid #555; padding-bottom: 5px;}
-        .rules-item { margin-bottom: 4px; display: flex; align-items: center; }
-        .emoji-icon { width: 25px; display: inline-block; font-size: 16px; text-align: center;}
+        .rules-column h3 { color: #f1c40f; margin: 0 0 5px 0; font-size: 9px; border-bottom: 1px solid #555; padding-bottom: 2px;}
+        .rules-item { margin-bottom: 2px; display: flex; align-items: center; }
+        .emoji-icon { width: 15px; display: inline-block; font-size: 12px; text-align: center;}
 
-        button {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 14px;
-            cursor: pointer;
-            border-bottom: 4px solid #1e8449;
-            transition: transform 0.1s;
+        /* TUTORIAL */
+        .tutorial-card {
+            background: #34495e; border: 2px solid #ecf0f1; padding: 15px;
+            border-radius: 10px; max-width: 500px; width: 90%;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        
+        #tut-canvas {
+            background: #2c3e50;
+            border: 2px solid #7f8c8d;
+            margin-bottom: 10px;
+            border-radius: 5px;
         }
 
-        button:active {
-            transform: translateY(4px);
-            border-bottom: none;
-        }
+        .tutorial-text { font-size: 12px; color: #fff; margin-bottom: 15px; display: block; min-height: 40px;}
+        .tut-feedback { font-size: 12px; font-weight: bold; margin-bottom: 10px; min-height: 20px; }
 
-        .blink { animation: blinker 1s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
-        .hidden { display: none !important; }
-
-        #footer {
-            margin-top: 10px;
-            font-size: 10px;
-            color: #bdc3c7;
-            text-align: right;
-            width: 800px;
+        /* VERSION SWITCH */
+        #version-switch {
+            position: absolute; bottom: 10px; left: 10px; font-size: 8px; color: #555; text-decoration: underline; cursor: pointer;
         }
 
     </style>
 </head>
 <body>
 
-<div id="game-wrapper">
-    <div id="game-container">
+<div id="scaler">
+    <div id="game-wrapper">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
         
-        <!-- NEWSTICKER -->
-        <div id="news-ticker">
-            <div id="news-content">
-                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Es kommt zu Verspätungen der Linie 2 wegen Glühwein auf den Gleisen +++ PFERSEE: Eine Horde Weihnachtswichtel beim Plätzchenbacken gesichtet +++ ZOO: Rentiere versuchen ihre Verwandten zu befreien - Polizei vermutet Rudolf als Anführer +++ WETTER: 3cm Neuschnee: Chaos im Berufsverkehr erwartet +++ POLIZEI: Grinch in Oberhausen beim Schwarzfahren erwischt +++ MARKT: Glühweinvorräte kritisch niedrig - Nachschub per Drohne unterwegs +++ KULTUR: Augsburger Puppenkiste dementiert Gerüchte über streikende Marionetten +++ SPORT: Poller-Pumper Meisterschaft: Hubi hält den Rekord +++ LECHHAUSEN: Nikolaus steckte kurzzeitig im Kamin fest - Feuerwehr half mit Gleitgel +++ RATHAUSPLATZ: Turamichele besiegt Drachen diesmal mit Schneebällen +++ VERMISST: Wer hat den Sack vom Weihnachtsmann gesehen? Zuletzt am Kö gesehen +++ KULINARIK: Zwetschgendatschi offiziell zum Grundnahrungsmittel erklärt +++ HOCHZOLL: Schlitten auf der B2 geblitzt - 30 km/h zu schnell +++ FUGGEREI: Goldene Nüsse sind dieses Jahr aus Schokolade +++ STADTWERKE: "Bitte nicht die Poller lecken" warnt Pressesprecher +++ UNIVERSITÄT: Studie belegt: Glühwein hilft bei Prüfungsangst (nicht) +++ GÖGGINGEN: Hessing-Klinik meldet Anstieg an ausgerutschten Rentieren +++ EINKAUFEN: Innenstadt überfüllt: Menschenmassen auf der Jagd nach Last-Minute-Geschenken +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen für 2026 +++
-            </div>
-        </div>
-
         <div id="ui-layer">
             <div class="hud-top">
-                <div>LVL: <span id="level-display">1</span> | SCORE: <span id="score-display">0</span></div>
+                <div>LVL:<span id="level-display">1</span> SCR:<span id="score-display">0</span></div>
                 <div class="weihnachts-meter-container">
-                    STIMMUNG:
-                    <div class="weihnachts-meter">
-                        <div id="mood-fill" class="meter-fill"></div>
-                    </div>
+                    LAUNE:
+                    <div class="weihnachts-meter"><div id="mood-fill" class="meter-fill"></div></div>
                 </div>
+                <button id="pause-btn">PAUSE</button>
             </div>
         </div>
 
-        <div id="start-screen">
+        <div id="news-ticker">
+            <div id="news-content">
+                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Auf der Linie 2 kommt es zu verspätet +++ ZOO: Rentiere ausgebrochen +++ POLIZEI: Bürgermeisterin beim Schwarzfahren erwischt +++ BÜRGER: Der Kö soll wieder blinken +++ MARKT: Glühweinvorräte kritisch +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen +++ AUGSBURG: Poller klemmt erneut - "Wir brauchen mehr Schmiermittel" +++
+            </div>
+        </div>
+
+        <div id="legend">
+            <div class="legend-section"><span class="good">DURCHLASSEN</span><div class="legend-icons">🚋🍷🎁👼</div></div>
+            <div class="legend-section"><span class="bad">STOPPEN</span><div class="legend-icons">🥴👺👹🗣️</div></div>
+        </div>
+
+        <!-- START SCREEN -->
+        <div id="start-screen" class="screen-overlay">
             <h1>DIE POLLER-PUMPER<br>RETTEN WEIHNACHTEN</h1>
             
+            <p class="story-text">
+                Der Weihnachtsmarkt ist gefährdet! Die Poller müssen richtig bewegt werden, um das Fest zu retten. Jetzt müssen <strong>DU und dein Team</strong> ran!
+            </p>
+
             <div class="rules-grid">
                 <div class="rules-column">
-                    <h3 style="color:#2ecc71">DURCHLASSEN (POLLER RUNTER)</h3>
-                    <div class="rules-item"><span class="emoji-icon">🚋</span> Tram (muss durchfahren)</div>
-                    <div class="rules-item"><span class="emoji-icon">🍷</span> Glühwein & Essen (Markt)</div>
-                    <div class="rules-item"><span class="emoji-icon">🎁</span> Geschenke (Markt)</div>
-                    <div class="rules-item"><span class="emoji-icon">👼</span> Christkind & Santa (Markt)</div>
+                    <h3 style="color:#2ecc71">DURCHLASSEN (TAP)</h3>
+                    <div class="rules-item"><span class="emoji-icon">🚋</span> Tram</div>
+                    <div class="rules-item"><span class="emoji-icon">🍷</span> Essen/Wein</div>
+                    <div class="rules-item"><span class="emoji-icon">🎁</span> Geschenke</div>
+                    <div class="rules-item"><span class="emoji-icon">👼</span> Christkind</div>
                 </div>
                 <div class="rules-column">
-                    <h3 style="color:#e74c3c">STOPPEN (POLLER HOCH)</h3>
-                    <div class="rules-item"><span class="emoji-icon">🥴</span> Betrunkene (Markt)</div>
-                    <div class="rules-item"><span class="emoji-icon">🗣️</span> Schwurbler (Markt)</div>
-                    <div class="rules-item"><span class="emoji-icon">👺</span> Diebe (Markt)</div>
-                    <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame (Markt)</div>
+                    <h3 style="color:#e74c3c">STOPPEN (ZU)</h3>
+                    <div class="rules-item"><span class="emoji-icon">🥴</span> Suffkis</div>
+                    <div class="rules-item"><span class="emoji-icon">👺</span> Diebe</div>
+                    <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame</div>
                 </div>
             </div>
 
             <p>
-                <strong>MISSION:</strong><br>
-                Klicke auf die Poller, um sie zu bewegen.<br>
-                Lebensmittel, Geschenke UND Schurken stoppen im Markt.<br>
-                Trams und Rentiere (🦌) müssen durchfahren!
+                Tippe auf die Poller!<br>
+                Tipp: Handy quer halten!
             </p>
-            <button id="start-btn" class="blink">DIENST ANTRETEN</button>
+            <div class="mode-select">
+                <button onclick="checkTutorial('CLASSIC')">KLASSIK</button>
+                <button onclick="checkTutorial('HYDRAULIC')">HYDRAULISCH</button>
+                <button onclick="checkTutorial('AUGSBURG')">AUGSBURG</button>
+            </div>
+            <!-- Optional Desktop Switch Link -->
+            <div id="version-switch" onclick="alert('Diese Version ist responsive und funktioniert auch am Desktop!')">Desktop-Version?</div>
         </div>
 
-        <div id="game-over-screen" class="hidden">
-            <h1>DIENST ZUENDE!</h1>
-            <h2 id="final-reason">Grund: Unbekannt</h2>
-            <p>Level: <span id="final-level">1</span> | Score: <span id="final-score">0</span></p>
-            <button id="restart-btn">NEUE SCHICHT</button>
+        <!-- TUTORIAL SCREEN -->
+        <div id="tutorial-screen" class="screen-overlay hidden">
+            <div class="tutorial-card">
+                <!-- Mini Canvas for Animations -->
+                <canvas id="tut-canvas" width="200" height="120"></canvas>
+                
+                <span id="tut-text" class="tutorial-text">...</span>
+                <div id="tut-feedback" class="tut-feedback"></div>
+                
+                <div id="tut-controls">
+                    <button id="tut-btn-open" onclick="handleTutorialChoice(true)">POLLERN (AUF)</button>
+                    <button id="tut-btn-close" class="danger" onclick="handleTutorialChoice(false)">BLOCKIEREN (ZU)</button>
+                </div>
+                <div style="margin-top:10px">
+                    <button class="secondary" onclick="skipTutorial()">DIENST BEGINNEN</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAUSE SCREEN -->
+        <div id="pause-screen" class="screen-overlay hidden">
+            <h1>PAUSE</h1>
+            <p>Die Pumper machen Brotzeit.</p>
+            <button onclick="togglePause()">WEITERMACHEN</button>
+            <button class="secondary" onclick="location.reload()">BEENDEN</button>
+        </div>
+
+        <!-- GAME OVER SCREEN -->
+        <div id="game-over-screen" class="screen-overlay hidden">
+            <h1 id="go-title">SCHICHTENDE!</h1>
+            <h2 id="final-reason">...</h2>
+            <p>Score: <span id="final-score">0</span></p>
+            <button onclick="location.reload()">NEUER DIENST</button>
         </div>
     </div>
-
-    <!-- LEGENDE -->
-    <div id="legend">
-        <div class="legend-section">
-            <span class="good">DURCHLASSEN</span>
-            <div class="legend-icons">🚋 🍪 🎁 🍷 👼 🎅</div>
-        </div>
-        <div class="legend-section">
-            <span class="neutral">NEUTRAL</span>
-            <div class="legend-icons">🦌</div>
-        </div>
-        <div class="legend-section">
-            <span class="bad">STOPPEN</span>
-            <div class="legend-icons">🥴 🗣️ 👺 👹</div>
-        </div>
-    </div>
-
-    <!-- Fusszeile -->
-    <div id="footer">Johannes Heinrich 2025</div>
 </div>
 
 <script>
-    /**
-     * GAME CONFIGURATION & STATE
-     */
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Game State
-    let gameRunning = false;
-    let score = 0;
-    let mood = 100;
-    let level = 1;
-    let eventsCount = 0; 
-    let frameCount = 0;
-    let lastTime = 0;
+    /* --- RESIZE LOGIC --- */
+    function resizeGame() {
+        const wrapper = document.getElementById('game-wrapper');
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+        const scale = Math.min(winW / 800, winH / 500);
+        wrapper.style.transform = `scale(${scale})`;
+    }
+    window.addEventListener('resize', resizeGame);
+    resizeGame();
 
-    // Entities
-    let workers = [];
-    let bollards = [];
-    let entities = [];
-    let particles = [];
-    let snow = [];
-
-    // Assets
-    const ASSETS = {
-        good: [
-            { sprite: '🚋', name: 'Tram' },
-            { sprite: '🍪', name: 'Lebkuchen' },
-            { sprite: '🎁', name: 'Geschenk' },
-            { sprite: '🍷', name: 'Glühwein' },
-            { sprite: '👼', name: 'Christkind' },
-            { sprite: '🎅', name: 'Santa' }
-        ],
-        bad: [
-            { sprite: '🥴', name: 'Betrunkener' },
-            { sprite: '🗣️', name: 'Schwurbler' },
-            { sprite: '👺', name: 'Dieb' },
-            { sprite: '👹', name: 'Griesgram' } 
-        ],
-        jump: [
-            { sprite: '🦌', name: 'Rentier' }
-        ],
-        worker: '👷',
-        workerBusy: '🏗️',
-        bollardClosed: '🗿',
-        bollardOpen: '🕳️'
-    };
-
-    // Constants
-    const TRACK_Y_1 = 180;
-    const TRACK_Y_2 = 350;
-    const LEFT_BOLLARD_X = 200;
-    const RIGHT_BOLLARD_X = 600;
-    const MARKET_CENTER_X = 400; // Center of the market
-    const WORKER_SPEED = 8; // Faster workers
-    const PUMP_TIME = 30; // Faster pumping (0.5s)
-    
-    // Audio Context
+    /* --- AUDIO --- */
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioCtx = new AudioContext();
 
@@ -369,512 +298,498 @@
         gainNode.connect(audioCtx.destination);
         const now = audioCtx.currentTime;
 
-        if (type === 'click') {
-            osc.frequency.setValueAtTime(300, now);
-            osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-            gainNode.gain.setValueAtTime(0.05, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
-            osc.start(now); osc.stop(now + 0.1);
-        } else if (type === 'pump') {
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(60, now);
-            gainNode.gain.setValueAtTime(0.05, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
-            osc.start(now); osc.stop(now + 0.1);
-        } else if (type === 'crash') {
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(100, now);
-            osc.frequency.exponentialRampToValueAtTime(20, now + 0.4);
-            gainNode.gain.setValueAtTime(0.2, now);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
-            osc.start(now); osc.stop(now + 0.4);
-        } else if (type === 'success') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(500, now);
-            osc.frequency.setValueAtTime(1000, now + 0.1);
-            gainNode.gain.setValueAtTime(0.05, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.2);
-            osc.start(now); osc.stop(now + 0.2);
-        } else if (type === 'levelup') {
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(300, now);
-            osc.frequency.setValueAtTime(400, now + 0.1);
-            osc.frequency.setValueAtTime(500, now + 0.2);
-            gainNode.gain.setValueAtTime(0.1, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.4);
-            osc.start(now); osc.stop(now + 0.4);
-        } else if (type === 'arrive') {
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, now);
-            osc.frequency.linearRampToValueAtTime(800, now + 0.2);
-            gainNode.gain.setValueAtTime(0.05, now);
-            gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-            osc.start(now); osc.stop(now + 0.3);
+        if (type === 'click') { osc.frequency.value=300; gainNode.gain.value=0.05; osc.start(now); osc.stop(now+0.1); }
+        if (type === 'pump') { osc.type='sawtooth'; osc.frequency.value=60; gainNode.gain.value=0.05; osc.start(now); osc.stop(now+0.1); }
+        if (type === 'crash') { osc.type='square'; osc.frequency.exponentialRampToValueAtTime(20, now+0.3); gainNode.gain.value=0.2; osc.start(now); osc.stop(now+0.3); }
+        if (type === 'success') { osc.type='sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.linearRampToValueAtTime(1000, now+0.2); gainNode.gain.value=0.05; osc.start(now); osc.stop(now+0.2); }
+    }
+
+    /* --- ENGINE --- */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Config
+    const TRACK_Y_1 = 180, TRACK_Y_2 = 350;
+    const LEFT_BOLLARD_X = 200, RIGHT_BOLLARD_X = 600;
+    const MARKET_CENTER_X = 400;
+    const WORKER_SPEED = 8;
+    const PUMP_TIME = 30; 
+    const MOVE_TIME = 40; 
+
+    // State
+    let gameState = 'MENU'; 
+    let gameMode = 'CLASSIC';
+    let score=0, mood=100, level=1, eventsCount=0, frameCount=0, autoWinTimer=0;
+    let workers=[], bollards=[], entities=[], particles=[];
+    
+    // Intro State
+    let introPhase = 0; // 0: Santa, 1: Bollards, 2: Workers
+    let santaX = -100;
+
+    // Assets
+    const ASSETS = {
+        good: [
+            { sprite: '🚋', name: 'Tram' }, { sprite: '🍪', name: 'Lebkuchen' },
+            { sprite: '🎁', name: 'Geschenk' }, { sprite: '🍷', name: 'Glühwein' },
+            { sprite: '👼', name: 'Christkind' }, { sprite: '🎅', name: 'Santa' }
+        ],
+        bad: [
+            { sprite: '🥴', name: 'Betrunkener' }, { sprite: '🗣️', name: 'Schwurbler' },
+            { sprite: '👺', name: 'Dieb' }, { sprite: '👹', name: 'Griesgram' } 
+        ],
+        jump: [{ sprite: '🦌', name: 'Rentier' }],
+        worker: '👷', workerBusy: '🏗️',
+        bollardClosed: '🗿', bollardOpen: '🕳️'
+    };
+
+    /* --- TUTORIAL LOGIC & ANIMATION --- */
+    const TUT_DATA = [
+        { e: '🚋', t: 'Die TRAM! Sie muss durchfahren.', action: true },
+        { e: '🥴', t: 'Ein SUFFKI! Pöbelt rum.', action: false },
+        { e: '🍷', t: 'GLÜHWEIN! Muss zum Markt.', action: true },
+        { e: '🗣️', t: 'Ein SCHWURBLER! Nervt alle.', action: false },
+        { e: '👺', t: 'Ein DIEB! Will klauen.', action: false }
+    ];
+    let tutIndex = 0;
+    let tutAnimRunning = false;
+    const tutCanvas = document.getElementById('tut-canvas');
+    const tutCtx = tutCanvas.getContext('2d');
+    let tutBollard = null;
+    let tutWorker = null;
+
+    function checkTutorial(mode) {
+        gameMode = mode;
+        document.getElementById('start-screen').classList.add('hidden');
+        
+        // Session Check
+        if (sessionStorage.getItem('tut_seen') === 'true' || mode === 'HYDRAULIC') {
+            startIntro();
+        } else {
+            startTutorial();
         }
     }
 
-    /**
-     * CLASSES
-     */
+    function startTutorial() {
+        gameState = 'TUTORIAL';
+        tutIndex = 0;
+        document.getElementById('tutorial-screen').classList.remove('hidden');
+        sessionStorage.setItem('tut_seen', 'true');
+        loadTutStep();
+        requestAnimationFrame(tutLoop);
+    }
 
+    function loadTutStep() {
+        const step = TUT_DATA[tutIndex];
+        document.getElementById('tut-text').innerText = step.t;
+        document.getElementById('tut-feedback').innerText = "";
+        
+        // Reset Mini Sim
+        tutBollard = new Bollard(100, 80, 0); 
+        tutWorker = new Worker(0, 150, 80);
+        tutWorker.state = 'IDLE';
+        tutWorker.x = 150; tutWorker.targetX = 150;
+        tutAnimRunning = false;
+    }
+
+    function handleTutorialChoice(choice) {
+        if(tutAnimRunning) return;
+        const step = TUT_DATA[tutIndex];
+        const feedback = document.getElementById('tut-feedback');
+        
+        if (choice === step.action) {
+            feedback.innerText = "Richtig!";
+            feedback.style.color = "#2ecc71";
+            tutAnimRunning = true;
+            if (choice === true) {
+                tutWorker.assignTask(tutBollard);
+                let prevMode = gameMode; gameMode = 'AUGSBURG'; // Demo animation
+                setTimeout(() => { gameMode = prevMode; nextTutStep(); }, 2000); 
+            } else setTimeout(nextTutStep, 1000);
+        } else {
+            feedback.innerText = "Falsch! Denk nach!";
+            feedback.style.color = "#e74c3c";
+            playSound('crash');
+        }
+    }
+
+    function nextTutStep() {
+        tutIndex++;
+        if (tutIndex >= TUT_DATA.length) skipTutorial();
+        else loadTutStep();
+    }
+
+    function skipTutorial() {
+        document.getElementById('tutorial-screen').classList.add('hidden');
+        sessionStorage.setItem('tut_seen', 'true');
+        startIntro();
+    }
+
+    function tutLoop() {
+        if (gameState !== 'TUTORIAL') return;
+        tutCtx.fillStyle = '#34495e'; tutCtx.fillRect(0, 0, 200, 120);
+        tutCtx.strokeStyle = '#555'; tutCtx.lineWidth=4;
+        tutCtx.beginPath(); tutCtx.moveTo(0,80); tutCtx.lineTo(200,80); tutCtx.stroke();
+
+        const step = TUT_DATA[tutIndex];
+        tutCtx.font = '30px Arial'; tutCtx.textAlign='center'; tutCtx.textBaseline='middle';
+        tutCtx.fillText(step.e, 30, 80);
+
+        if (tutAnimRunning && step.action === true) {
+            tutWorker.update(); 
+            let sprite = tutWorker.state === 'WORKING' ? ASSETS.workerBusy : ASSETS.worker;
+            tutCtx.fillText(sprite, tutWorker.x, tutWorker.y);
+
+            let b = tutBollard;
+            let bSprite = ASSETS.bollardClosed;
+            if(b.state==='OPEN') { bSprite = '🗿'; tutCtx.fillText('🕳️', b.originX, b.y); }
+            else if (b.state.includes('MOVE') || b.state==='UP') tutCtx.fillText('🕳️', b.originX, b.y);
+            
+            let liftY = 0;
+            if (b.state === 'PUMP_UP') liftY = -10;
+            if (b.state.includes('MOVE')) liftY = -10;
+            
+            tutCtx.fillText(bSprite, b.x, b.y + liftY);
+        } else {
+            tutCtx.fillText(ASSETS.worker, 150, 80);
+            tutCtx.fillText(ASSETS.bollardClosed, 100, 80);
+        }
+        requestAnimationFrame(tutLoop);
+    }
+
+    /* --- CLASSES --- */
     class Bollard {
         constructor(x, y, id) {
-            this.x = x;
-            this.y = y;
-            this.id = id;
+            this.x = x; this.originX = x; this.y = y; this.id = id;
             this.state = 'CLOSED'; 
             this.progress = 0;
             this.workingWorker = null;
+            this.offsetX = 0; 
+            this.moveDir = (x < 400) ? -1 : 1; 
         }
-
         draw() {
-            ctx.fillStyle = this.state === 'OPEN' ? '#27ae60' : '#7f8c8d';
-            if (this.state === 'OPENING' || this.state === 'CLOSING') ctx.fillStyle = '#f39c12';
+            if (gameState === 'INTRO' && introPhase < 1) return; // Hide before spawn
+
+            let color = '#7f8c8d';
+            if (this.state === 'OPEN') color = '#27ae60';
+            if(this.state.includes('PUMP') || this.state.includes('MOVE') || this.state.includes('ING')) ctx.fillStyle = '#f39c12';
+            else ctx.fillStyle = color;
             
+            // Progress Bar
             if (this.progress > 0) {
-                ctx.fillStyle = '#f1c40f';
-                ctx.fillRect(this.x - 20, this.y - 45, 40, 6);
-                ctx.fillStyle = '#c0392b';
-                ctx.fillRect(this.x - 20, this.y - 45, 40 * (this.progress / PUMP_TIME), 6);
+                ctx.fillStyle = '#f1c40f'; ctx.fillRect(this.originX-20, this.y-65, 40, 6);
+                ctx.fillStyle = '#c0392b'; 
+                let maxP = this.state.includes('MOVE') ? MOVE_TIME : PUMP_TIME;
+                ctx.fillRect(this.originX-20, this.y-65, 40*(this.progress/maxP), 6);
             }
 
-            ctx.font = '30px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            let sprite = (this.state === 'CLOSED' || this.state === 'CLOSING') ? ASSETS.bollardClosed : ASSETS.bollardOpen;
-            ctx.fillText(sprite, this.x, this.y);
-            
-            ctx.fillStyle = '#ecf0f1';
-            ctx.font = '8px "Press Start 2P"';
-            ctx.fillText(this.state === 'CLOSED' ? "ZU" : "AUF", this.x, this.y + 25);
+            let drawX = this.x;
+            let sprite = ASSETS.bollardClosed;
+
+            if (this.state === 'OPEN') {
+                sprite = ASSETS.bollardOpen; 
+                if (gameMode === 'AUGSBURG') {
+                    ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText('🕳️', this.originX, this.y); 
+                    sprite = '🗿'; 
+                }
+            } else if (gameMode === 'AUGSBURG' && (this.state.includes('MOVE') || this.state === 'UP')) {
+                ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('🕳️', this.originX, this.y);
+            }
+
+            ctx.font = '30px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            let liftY = 0;
+            if (gameMode === 'AUGSBURG') {
+                if (this.state === 'PUMP_UP') liftY = -15 * (this.progress/PUMP_TIME);
+                else if (this.state === 'PUMP_DOWN') liftY = -15 * (1-(this.progress/PUMP_TIME));
+                else if (this.state !== 'CLOSED' && this.state !== 'OPEN') liftY = -15;
+            }
+            ctx.fillText(sprite, drawX, this.y + liftY);
+
+            ctx.fillStyle = '#ecf0f1'; ctx.font = '8px "Press Start 2P"';
+            ctx.fillText((this.state==='CLOSED')?"ZU":(this.state==='OPEN'?"AUF":"..."), this.originX, this.y+30);
         }
     }
 
     class Worker {
-        constructor(id, startX, startY) {
-            this.id = id;
-            this.x = startX;
-            this.y = startY;
-            this.targetX = startX;
-            this.targetY = startY;
-            this.targetBollard = null;
-            this.state = 'IDLE'; 
+        constructor(id, x, y) {
+            this.id = id; this.x = x; this.y = y; this.targetX = x; this.targetY = y;
+            this.targetBollard = null; this.state = 'IDLE'; 
         }
-
         assignTask(bollard) {
-            this.targetBollard = bollard;
-            this.targetX = bollard.x;
-            this.targetY = bollard.y - 20; 
-            this.state = 'MOVING';
-            bollard.workingWorker = this;
+            this.targetBollard = bollard; this.targetX = bollard.x; this.targetY = bollard.y - 20; 
+            this.state = 'MOVING'; bollard.workingWorker = this;
         }
-
         update() {
-            const dx = this.targetX - this.x;
-            const dy = this.targetY - this.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
+            const dx = this.targetX - this.x; const dy = this.targetY - this.y; const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > WORKER_SPEED) { this.x += (dx/dist)*WORKER_SPEED; this.y += (dy/dist)*WORKER_SPEED; }
+            else { this.x = this.targetX; this.y = this.targetY; if(this.targetBollard && this.state==='MOVING') this.state='WORKING'; }
 
-            if (dist > WORKER_SPEED) {
-                this.x += (dx / dist) * WORKER_SPEED;
-                this.y += (dy / dist) * WORKER_SPEED;
-            } else {
-                this.x = this.targetX;
-                this.y = this.targetY;
-                if (this.targetBollard && this.state === 'MOVING') {
-                    this.state = 'PUMPING';
-                }
-            }
-
-            if (this.state === 'PUMPING' && this.targetBollard) {
-                let b = this.targetBollard;
-                if (b.state === 'CLOSED') b.state = 'OPENING';
-                if (b.state === 'OPEN') b.state = 'CLOSING';
-
-                if (b.state === 'OPENING' || b.state === 'CLOSING') {
-                    b.progress++;
-                    if (frameCount % 5 === 0) playSound('pump');
-                    
-                    if (b.progress >= PUMP_TIME) {
-                        b.state = (b.state === 'OPENING') ? 'OPEN' : 'CLOSED';
-                        b.progress = 0;
-                        b.workingWorker = null;
-                        this.state = 'IDLE';
-                        this.targetBollard = null;
-                    }
-                }
+            if (this.state === 'WORKING' && this.targetBollard) {
+                let effectiveMode = (gameState === 'TUTORIAL') ? 'AUGSBURG' : gameMode;
+                if (effectiveMode === 'AUGSBURG') this.handleAugsburg(this.targetBollard);
+                else this.handleClassic(this.targetBollard);
             }
         }
-
+        handleClassic(b) {
+            if(b.state==='CLOSED') b.state='OPENING'; if(b.state==='OPEN') b.state='CLOSING';
+            if(b.state.includes('ING')) {
+                b.progress++; if(frameCount%5===0) playSound('pump');
+                if(b.progress>=PUMP_TIME) { b.state = (b.state==='OPENING')?'OPEN':'CLOSED'; b.progress=0; this.finishJob(b); }
+            }
+        }
+        handleAugsburg(b) {
+            if (b.state === 'CLOSED') b.state = 'PUMP_UP'; else if (b.state === 'OPEN') b.state = 'MOVE_IN';
+            
+            if (b.state === 'PUMP_UP') {
+                b.progress++; if(frameCount%5===0) playSound('pump');
+                if (b.progress >= PUMP_TIME) { b.progress = 0; b.state = 'MOVE_OUT'; }
+            }
+            else if (b.state === 'MOVE_OUT') {
+                b.progress++;
+                let moveStep = 60 * (1/MOVE_TIME); b.x += b.moveDir * moveStep; this.x = b.x;
+                if (b.progress >= MOVE_TIME) { b.progress = 0; b.state = 'OPEN'; this.finishJob(b); }
+            }
+            else if (b.state === 'MOVE_IN') {
+                b.progress++;
+                let moveStep = 60 * (1/MOVE_TIME); b.x -= b.moveDir * moveStep; this.x = b.x;
+                if (b.progress >= MOVE_TIME) { b.progress = 0; b.x = b.originX; b.state = 'PUMP_DOWN'; }
+            }
+            else if (b.state === 'PUMP_DOWN') {
+                b.progress++; if(frameCount%5===0) playSound('pump');
+                if (b.progress >= PUMP_TIME) { b.progress = 0; b.state = 'CLOSED'; this.finishJob(b); }
+            }
+        }
+        finishJob(b) { b.workingWorker = null; this.state = 'IDLE'; this.targetBollard = null; }
         draw() {
-            ctx.font = '24px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            let sprite = this.state === 'PUMPING' ? ASSETS.workerBusy : ASSETS.worker;
-            let offset = (this.state === 'MOVING' || this.state === 'PUMPING') ? Math.sin(frameCount * 0.5) * 3 : 0;
+            if (gameState === 'INTRO' && introPhase < 2) return;
+            ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            let sprite = this.state === 'WORKING' ? ASSETS.workerBusy : ASSETS.worker;
+            let offset = (this.state === 'MOVING' || this.state === 'WORKING') ? Math.sin(frameCount * 0.5) * 3 : 0;
             ctx.fillText(sprite, this.x, this.y + offset);
         }
     }
 
     class GameEntity {
         constructor() {
-            this.lane = Math.floor(Math.random() * 2);
-            this.y = this.lane === 0 ? TRACK_Y_1 : TRACK_Y_2;
-
-            let dir = Math.floor(Math.random() * 2);
-            this.direction = dir === 0 ? 1 : -1;
-            this.x = dir === 0 ? -50 : canvas.width + 50;
-
-            let rand = Math.random();
-            if (rand < 0.1) {
-                this.category = 'jump';
-                this.data = ASSETS.jump[0];
-            } else if (rand < 0.55) {
-                this.category = 'good';
-                this.data = ASSETS.good[Math.floor(Math.random() * ASSETS.good.length)];
-            } else {
-                this.category = 'bad';
-                this.data = ASSETS.bad[Math.floor(Math.random() * ASSETS.bad.length)];
-            }
-
-            let baseSpeed = 1.5 + ((level - 1) * 0.2);
-            if (this.data.name === 'Tram') baseSpeed *= 0.7; 
+            this.lane = Math.floor(Math.random() * 2); this.y = this.lane === 0 ? TRACK_Y_1 : TRACK_Y_2;
+            this.direction = Math.random() < 0.5 ? 1 : -1;
+            this.x = this.direction === 1 ? -50 : canvas.width + 50;
             
+            let r = Math.random();
+            if (r < 0.1) { this.category = 'jump'; this.data = ASSETS.jump[0]; }
+            else if (r < 0.55) { this.category = 'good'; this.data = ASSETS.good[Math.floor(Math.random()*ASSETS.good.length)]; }
+            else { this.category = 'bad'; this.data = ASSETS.bad[Math.floor(Math.random()*ASSETS.bad.length)]; }
+            
+            // Standardize Tram Frequency (35% in all modes)
+            if (Math.random() < 0.35) { this.category = 'good'; this.data = ASSETS.good[0]; }
+
+            // Reduced Start Speed (0.8 base - was 1.0 or 0.7) and gentle slope
+            let baseSpeed = (0.8 + (level*0.05)) * (this.data.name==='Tram'?0.6:1);
             this.speed = baseSpeed;
             this.dead = false;
         }
-
         update() {
-            if (this.dead) return;
-
+            if(this.dead) return;
             this.x += this.speed * this.direction;
 
-            // MARKET ARRIVAL CHECK
-            if ((this.category === 'good' && this.data.name !== 'Tram') || this.category === 'bad') {
-                let distToCenter = Math.abs(this.x - MARKET_CENTER_X);
-                if (distToCenter < 10) {
-                    if (this.category === 'good') {
-                        this.handleMarketArrival();
-                    } else {
-                        this.handleMarketIntrusion();
+            // --- ZEN MODE LOGIC ---
+            if (gameMode === 'HYDRAULIC' && !this.dead) {
+                let myBollard = bollards.find(b => Math.abs(b.y - this.y) < 20 && Math.abs(b.originX - (this.direction===1 ? LEFT_BOLLARD_X : RIGHT_BOLLARD_X)) < 20);
+                if (myBollard) {
+                    let dist = Math.abs(this.x - myBollard.originX);
+                    let needsOpen = (this.category === 'good');
+                    if (this.category === 'jump') needsOpen = false;
+
+                    if (dist < 180 && dist > 20) { 
+                        if (needsOpen && myBollard.state === 'CLOSED') myBollard.state = 'OPENING';
+                        if (!needsOpen && myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
                     }
-                    return;
+                    if (this.category === 'good' && dist > 60 && ((this.direction===1 && this.x > myBollard.originX) || (this.direction===-1 && this.x < myBollard.originX))) {
+                         if (myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
+                    }
                 }
             }
 
-            // COLLISION
-            let myBollards = bollards.filter(b => Math.abs(b.y - this.y) < 20);
-            myBollards.sort((a,b) => a.x - b.x); 
-            
-            if (this.category !== 'jump') {
-                myBollards.forEach(b => {
-                    let dist = Math.abs(this.x - b.x);
-                    if (dist < 25) {
-                        if (b.state === 'CLOSED' || b.state === 'OPENING' || b.state === 'CLOSING') {
-                            this.handleCrash(true);
-                        }
-                    }
+            if ((this.category==='good' && this.data.name!=='Tram') || this.category==='bad') {
+                if(Math.abs(this.x-MARKET_CENTER_X)<10) { 
+                    this.category==='good' ? this.arrive() : this.intrude(); 
+                    return; 
+                }
+            }
+
+            if(this.category!=='jump') {
+                bollards.filter(b=>Math.abs(b.y-this.y)<20).forEach(b=>{
+                    if(Math.abs(this.x-b.x)<25 && b.state!=='OPEN') this.crash();
                 });
             }
-
-            if (this.x > canvas.width + 60 || this.x < -60) {
-                this.dead = true;
-                this.handleExit();
-            }
+            if(this.x>canvas.width+60||this.x<-60) { this.dead=true; this.exit(); }
         }
-
-        handleMarketArrival() {
-            this.dead = true;
-            mood = Math.min(100, mood + 10);
-            score += 150;
-            playSound('arrive');
-            createExplosion(this.x, this.y, '💖'); 
-            createFloatingText("ANGEKOMMEN!", this.x, this.y - 30, '#2ecc71');
+        arrive() { this.dead=true; mood=Math.min(100,mood+10); score+=150; playSound('arrive'); createExplosion(this.x,this.y,'💖'); checkMood(); }
+        intrude() { this.dead=true; mood-=20; score=Math.max(0,score-100); playSound('crash'); createFloatingText("OHJE! -100",this.x,this.y-30,'#e74c3c'); checkMood(); }
+        crash() { 
+            this.dead=true; createExplosion(this.x,this.y,'💥'); 
+            if(this.category==='good') { mood-=15; playSound('crash'); if(this.data.name==='Tram') gameOver("Tramunfall!"); }
+            else { score+=50; playSound('success'); createFloatingText("STOP!",this.x,this.y-30,'#2ecc71'); }
             checkMood();
         }
-
-        handleMarketIntrusion() {
-            this.dead = true;
-            mood -= 20;
-            score -= 100; // Deduct Score
-            if(score < 0) score = 0;
-            playSound('crash');
-            createFloatingText("EINGEDRUNGEN (-100)", this.x, this.y - 30, '#e74c3c');
-            checkMood();
+        exit() {
+            if(this.category==='good') { score+=100; createFloatingText("FREI!",this.x,this.y,'#2ecc71'); }
+            else if(this.category==='bad') { mood-=20; score=Math.max(0,score-100); checkMood(); }
         }
-
-        handleCrash(isBollardHit) {
-            this.dead = true;
-            createExplosion(this.x, this.y, '💥');
-
-            if (this.category === 'good') {
-                mood -= 15;
-                playSound('crash');
-                createFloatingText("NEIN!", this.x, this.y - 30, '#e74c3c');
-                if (this.data.name === 'Tram') {
-                    gameOver("Tramunfall! Der Verkehr ist zusammengebrochen.");
-                }
-            } else if (this.category === 'bad') {
-                score += 50;
-                playSound('success');
-                createFloatingText("GEBLOCKT!", this.x, this.y - 30, '#2ecc71');
-            }
-            
-            checkMood();
-        }
-
-        handleExit() {
-            if (this.category === 'good') {
-                score += 100;
-                createFloatingText("TRAM FREI!", this.x - (50*this.direction), this.y, '#2ecc71');
-            } else if (this.category === 'bad') {
-                mood -= 20;
-                score -= 100; 
-                if(score < 0) score = 0; 
-                playSound('crash');
-                createFloatingText("ENTKOMMEN (-100)", this.x - (50*this.direction), this.y, '#e74c3c');
-                checkMood();
-            } else {
-                score += 10;
-            }
-        }
-
         draw() {
-            if (this.dead) return;
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            if (this.direction === -1) ctx.scale(-1, 1);
-            ctx.font = '30px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(this.data.sprite, 0, 0);
+            if(this.dead) return;
+            ctx.save(); ctx.translate(this.x, this.y); if(this.direction===-1) ctx.scale(-1,1);
+            ctx.font='30px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(this.data.sprite,0,0);
             ctx.restore();
         }
     }
 
-    /**
-     * VISUALS
-     */
+    function createExplosion(x,y,c) { for(let i=0;i<5;i++) particles.push({x:x,y:y,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*10,life:1,char:c,type:'p'}); }
+    function createFloatingText(t,x,y,c) { particles.push({x:x,y:y,text:t,color:c,life:1,vy:-1.5,type:'t'}); }
+    function checkMood() { document.getElementById('mood-fill').style.width=mood+'%'; if(mood<=0) gameOver("Stimmung am Ende!"); }
 
-    function createExplosion(x, y, char) {
-        for(let i=0; i<8; i++) {
-            particles.push({
-                x: x, y: y,
-                vx: (Math.random()-0.5)*10,
-                vy: (Math.random()-0.5)*10,
-                life: 1.0,
-                char: char,
-                type: 'particle'
-            });
-        }
+    function togglePause() {
+        if (gameState==='PLAY') { gameState='PAUSE'; document.getElementById('pause-screen').classList.remove('hidden'); }
+        else if (gameState==='PAUSE') { gameState='PLAY'; document.getElementById('pause-screen').classList.add('hidden'); }
     }
 
-    function createFloatingText(text, x, y, color) {
-        particles.push({
-            x: x, y: y,
-            text: text,
-            color: color,
-            life: 1.0,
-            vy: -1.5,
-            type: 'text'
-        });
-    }
-
-    function drawBackground() {
-        ctx.fillStyle = '#34495e';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#2c3e50';
-        ctx.fillRect(LEFT_BOLLARD_X, 0, RIGHT_BOLLARD_X - LEFT_BOLLARD_X, canvas.height);
-        
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = '#555';
-        [TRACK_Y_1, TRACK_Y_2].forEach(y => {
-            ctx.beginPath();
-            ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
-            ctx.stroke();
-            ctx.strokeStyle = '#7f8c8d';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0, y-8); ctx.lineTo(canvas.width, y-8);
-            ctx.moveTo(0, y+8); ctx.lineTo(canvas.width, y+8);
-            ctx.stroke();
-        });
-
-        ctx.font = '40px Arial';
-        ctx.fillText('🎄', 400, 100);
-        ctx.fillText('✨', 300, 450);
-        ctx.fillText('✨', 500, 450);
-    }
-
-    /**
-     * CORE FUNCTIONS
-     */
-
-    function init() {
+    /* --- INTRO & GAME LOOP --- */
+    function startIntro() {
         bollards = [
-            new Bollard(LEFT_BOLLARD_X, TRACK_Y_1, 0), 
-            new Bollard(RIGHT_BOLLARD_X, TRACK_Y_1, 1), 
-            new Bollard(LEFT_BOLLARD_X, TRACK_Y_2, 2), 
-            new Bollard(RIGHT_BOLLARD_X, TRACK_Y_2, 3)  
+            new Bollard(LEFT_BOLLARD_X, TRACK_Y_1, 0), new Bollard(RIGHT_BOLLARD_X, TRACK_Y_1, 1),
+            new Bollard(LEFT_BOLLARD_X, TRACK_Y_2, 2), new Bollard(RIGHT_BOLLARD_X, TRACK_Y_2, 3)
         ];
+        // Workers off screen
+        workers = [ new Worker(1, -50, 250), new Worker(2, 850, 250) ];
+        // Final targets
+        workers[0].finalX = 350; workers[1].finalX = 450;
+        
+        entities = []; score=0; mood=100; level=1; eventsCount=0; autoWinTimer=0;
+        
+        gameState = 'INTRO';
+        introPhase = 0;
+        santaX = -100;
+        playSound('success');
+        requestAnimationFrame(gameLoop);
+    }
 
-        workers = [
-            new Worker(1, 350, 250),
-            new Worker(2, 450, 250)
-        ];
+    function drawMarket() {
+        ctx.fillStyle='#2c3e50'; ctx.fillRect(LEFT_BOLLARD_X,0,RIGHT_BOLLARD_X-LEFT_BOLLARD_X,canvas.height);
+        
+        // Tree
+        ctx.font='80px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🎄', 400, 250);
+        // Stalls
+        ctx.font='50px Arial';
+        ctx.fillText('🛖', 300, 270);
+        ctx.fillText('🛖', 500, 270);
+        // Snow
+        ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(350, 100, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(450, 150, 3, 0, Math.PI*2); ctx.fill();
+    }
 
-        entities = [];
-        particles = [];
-        canvas.addEventListener('mousedown', handleInput);
+    function gameLoop() {
+        if(gameState==='PLAY' || gameState==='HYDRAULIC_RUN' || gameState==='INTRO') {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            // Draw BG
+            ctx.fillStyle='#34495e'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            
+            drawMarket(); // Draw Center Market
+
+            ctx.lineWidth=6; ctx.strokeStyle='#555'; [TRACK_Y_1,TRACK_Y_2].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();});
+
+            // Intro Animation Logic
+            if(gameState === 'INTRO') {
+                // Phase 0: Santa flies
+                ctx.font='60px Arial'; ctx.fillText('🎅🛷', santaX, 100);
+                santaX += 5;
+                if(santaX > 400 && introPhase === 0) { introPhase = 1; playSound('pump'); } // Drop Bollards
+                if(santaX > 900) introPhase = 2; // Workers enter
+
+                // Phase 2: Workers walk
+                if (introPhase === 2) {
+                    workers.forEach(w => {
+                        w.targetX = w.finalX;
+                        w.update();
+                        w.draw();
+                    });
+                    // Check if arrived
+                    if (Math.abs(workers[0].x - 350) < 5 && Math.abs(workers[1].x - 450) < 5) {
+                        gameState = 'PLAY';
+                        createFloatingText("LOS GEHT'S!", 400, 250, '#f1c40f');
+                    }
+                }
+            } 
+            else {
+                // Game Logic
+                frameCount++;
+                if(gameMode==='HYDRAULIC' && ++autoWinTimer > 10800) { gameOver("Hydraulik-Sieg! Alle happy."); document.getElementById('go-title').innerText="GEWONNEN"; }
+                
+                // Slow Spawn: 300 Frames base (5s)
+                let rate = Math.max(60, 300-(level*15));
+                if(frameCount%rate===0) { entities.push(new GameEntity()); eventsCount++; if(eventsCount%10===0){level++; createFloatingText("LEVEL UP!",400,250,'#e67e22'); playSound('levelup');}}
+
+                entities.forEach((e,i)=>{e.update();e.draw();if(e.dead)entities.splice(i,1)});
+                if(gameMode!=='HYDRAULIC') workers.forEach(w=>{w.update();w.draw()});
+            }
+
+            // Always Draw Bollards (visible based on phase)
+            bollards.forEach(b=>{
+                if(gameMode==='HYDRAULIC') {
+                    if(b.state==='OPENING'){b.progress+=2;if(b.progress>=PUMP_TIME){b.state='OPEN';b.progress=0;}}
+                    if(b.state==='CLOSING'){b.progress+=2;if(b.progress>=PUMP_TIME){b.state='CLOSED';b.progress=0;}}
+                }
+                b.draw();
+            });
+
+            particles.forEach((p,i)=>{
+                p.type==='p' ? (p.x+=p.vx, p.y+=p.vy, ctx.font='20px Arial', ctx.fillText(p.char,p.x,p.y)) : (p.y+=p.vy, ctx.font='12px "Press Start 2P"', ctx.fillStyle=p.color, ctx.fillText(p.text,p.x,p.y));
+                p.life-=0.05; ctx.globalAlpha=p.life; if(p.life<=0)particles.splice(i,1); ctx.globalAlpha=1;
+            });
+
+            document.getElementById('score-display').innerText=Math.floor(score);
+            document.getElementById('level-display').innerText=level;
+        }
         requestAnimationFrame(gameLoop);
     }
 
     function handleInput(e) {
-        if (!gameRunning) return;
-        playSound('click');
-
+        if (e.type === 'touchstart') e.preventDefault();
+        if(gameState!=='PLAY') return;
         const rect = canvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const scale = 800 / rect.width;
+        const clickX = (clientX - rect.left) * scale;
+        const clickY = (clientY - rect.top) * scale;
 
         let clickedBollard = null;
-        let minDist = 60; 
+        bollards.forEach(b => { if(Math.sqrt((clickX-b.originX)**2 + (clickY-b.y)**2) < 80) clickedBollard = b; });
 
-        bollards.forEach(b => {
-            let d = Math.sqrt((clickX - b.x)**2 + (clickY - b.y)**2);
-            if (d < minDist) {
-                clickedBollard = b;
-                minDist = d;
-            }
-        });
-
-        if (clickedBollard) {
-            if (clickedBollard.workingWorker) return;
-            let idleWorkers = workers.filter(w => w.state === 'IDLE');
-            if (idleWorkers.length > 0) {
-                idleWorkers.sort((a,b) => {
-                    let da = Math.sqrt((a.x - clickedBollard.x)**2 + (a.y - clickedBollard.y)**2);
-                    let db = Math.sqrt((b.x - clickedBollard.x)**2 + (b.y - clickedBollard.y)**2);
-                    return da - db;
-                });
+        if(clickedBollard && !clickedBollard.workingWorker) {
+            playSound('click');
+            let idleWorkers = workers.filter(w=>w.state==='IDLE');
+            if(idleWorkers.length>0) {
+                idleWorkers.sort((a,b)=>Math.abs(a.x-clickedBollard.originX)-Math.abs(b.x-clickedBollard.originX));
                 idleWorkers[0].assignTask(clickedBollard);
-            } else {
-                createFloatingText("ALLE BESCHÄFTIGT!", clickX, clickY, '#f1c40f');
-            }
+            } else createFloatingText("ALLE BUSY!", clickX, clickY, '#f1c40f');
         }
-    }
-
-    function checkLevelUp() {
-        if (eventsCount > 0 && eventsCount % 10 === 0) {
-            level++;
-            eventsCount++; 
-            createFloatingText("LEVEL UP!", 400, 250, '#e67e22');
-            playSound('levelup');
-        }
-    }
-
-    function checkMood() {
-        document.getElementById('mood-fill').style.width = Math.max(0, mood) + '%';
-        if (mood <= 0) {
-            gameOver("Die Weihnachtsstimmung ist am Ende!");
-        }
-    }
-
-    function spawnLogic() {
-        let rate = Math.max(40, 200 - (level * 20));
-        if (frameCount % rate === 0) {
-            entities.push(new GameEntity());
-            eventsCount++;
-            checkLevelUp();
-        }
-    }
-
-    function gameLoop(timestamp) {
-        if (!lastTime) lastTime = timestamp;
-        lastTime = timestamp;
-
-        if (gameRunning) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBackground();
-
-            frameCount++;
-            spawnLogic();
-
-            bollards.forEach(b => b.draw());
-            
-            entities.forEach((e, i) => {
-                e.update();
-                e.draw();
-                if (e.dead) entities.splice(i, 1);
-            });
-
-            workers.forEach(w => {
-                w.update();
-                w.draw();
-            });
-
-            particles.forEach((p, i) => {
-                if (p.type === 'particle') {
-                    p.x += p.vx; p.y += p.vy; p.life -= 0.05;
-                    ctx.globalAlpha = Math.max(0, p.life);
-                    ctx.font = '20px Arial';
-                    ctx.fillText(p.char, p.x, p.y);
-                } else {
-                    p.y += p.vy; p.life -= 0.02;
-                    ctx.globalAlpha = Math.max(0, p.life);
-                    ctx.font = '12px "Press Start 2P"';
-                    ctx.fillStyle = p.color;
-                    ctx.fillText(p.text, p.x, p.y);
-                }
-                ctx.globalAlpha = 1.0;
-                if (p.life <= 0) particles.splice(i, 1);
-            });
-
-            document.getElementById('score-display').innerText = Math.floor(score);
-            document.getElementById('level-display').innerText = level;
-        }
-
-        requestAnimationFrame(gameLoop);
     }
 
     function gameOver(reason) {
-        gameRunning = false;
-        document.getElementById('final-reason').innerText = reason;
-        document.getElementById('final-score').innerText = Math.floor(score);
-        document.getElementById('final-level').innerText = level;
+        gameState='GAMEOVER';
+        document.getElementById('final-reason').innerText=reason;
+        document.getElementById('final-score').innerText=Math.floor(score);
         document.getElementById('game-over-screen').classList.remove('hidden');
     }
 
-    function startGame() {
-        score = 0;
-        mood = 100;
-        level = 1;
-        eventsCount = 0;
-        frameCount = 0;
-        gameRunning = true;
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('game-over-screen').classList.add('hidden');
-        document.getElementById('mood-fill').style.width = '100%';
-        document.getElementById('mood-fill').style.backgroundColor = '#27ae60';
-        
-        workers[0].x = 350; workers[0].y = 250; workers[0].state='IDLE'; workers[0].targetBollard=null;
-        workers[1].x = 450; workers[1].y = 250; workers[1].state='IDLE'; workers[1].targetBollard=null;
-        
-        entities = [];
-        bollards.forEach(b => { b.state = 'CLOSED'; b.progress=0; b.workingWorker=null; });
-        
-        playSound('success');
-    }
-
-    // Controls
-    document.getElementById('start-btn').addEventListener('click', () => {
-        init();
-        startGame();
-    });
-
-    document.getElementById('restart-btn').addEventListener('click', startGame);
-
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(0,0,800,500);
+    // Init
+    document.getElementById('pause-btn').addEventListener('click', togglePause);
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', handleInput, {passive: false});
+    ctx.fillStyle='#2c3e50'; ctx.fillRect(0,0,800,500);
+    requestAnimationFrame(gameLoop);
 
 </script>
 </body>
