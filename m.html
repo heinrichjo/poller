@@ -242,7 +242,7 @@
                 </div>
                 <div class="rules-column">
                     <h3 style="color:#e74c3c">STOPPEN (ZU)</h3>
-                    <div class="rules-item"><span class="emoji-icon">🍺</span> Suffkis</div>
+                    <div class="rules-item"><span class="emoji-icon">🥴</span> Suffkis</div>
                     <div class="rules-item"><span class="emoji-icon">👺</span> Diebe</div>
                     <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame</div>
                 </div>
@@ -270,7 +270,7 @@
         </div>
         <div class="legend-section">
             <span class="bad">STOPPEN</span>
-            <div class="legend-icons">🍺👺👹🗣️</div>
+            <div class="legend-icons">🥴👺👹🗣️</div>
         </div>
     </div>
 
@@ -311,7 +311,7 @@
             { sprite: '🎅', name: 'Santa' }
         ],
         bad: [
-            { sprite: '🍺', name: 'Betrunkener' },
+            { sprite: '🥴', name: 'Betrunkener' },
             { sprite: '🗣️', name: 'Schwurbler' },
             { sprite: '👺', name: 'Dieb' },
             { sprite: '👹', name: 'Griesgram' } 
@@ -606,7 +606,7 @@
                 // Should not happen, but fallback penalty
                 mood -= 20;
                 score -= 100; 
-                if(score < 0) score = 0;
+                if(score < 0) score = 0; 
                 playSound('crash');
                 createFloatingText("ENTKOMMEN (-100)", this.x - (50*this.direction), this.y, '#e74c3c');
                 checkMood();
