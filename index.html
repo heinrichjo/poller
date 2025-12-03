@@ -191,7 +191,7 @@
 
         <div id="news-ticker">
             <div id="news-content">
-                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Auf der Linie 2 kommt es zu verspätet +++ ZOO: Rentiere ausgebrochen +++ POLIZEI: Bürgermeisterin beim Schwarzfahren erwischt +++ BÜRGER: Der Kö soll wieder blinken +++ MARKT: Glühweinvorräte kritisch +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen +++ AUGSBURG: Poller klemmt erneut - "Wir brauchen mehr Schmiermittel" +++
+                +++ EILMELDUNG +++ Hohoho! Bald ist Weihnachten +++ VERKEHR: Linie 2 verspätet +++ ZOO: Rentiere ausgebrochen +++ POLIZEI: Grinch beim Schwarzfahren erwischt +++ MARKT: Glühweinvorräte kritisch +++ NACHRICHTEN: Poller-Pumper fordern beheizte Hubwagen +++ AUGSBURG: Poller klemmt erneut - "Wir brauchen mehr Schmiermittel" +++
             </div>
         </div>
 
@@ -312,14 +312,15 @@
     const TRACK_Y_1 = 180, TRACK_Y_2 = 350;
     const LEFT_BOLLARD_X = 200, RIGHT_BOLLARD_X = 600;
     const MARKET_CENTER_X = 400;
-    const WORKER_SPEED = 8;
-    const PUMP_TIME = 30; 
-    const MOVE_TIME = 40; 
+    const WORKER_SPEED_BASE = 250; // Pixels per second (not frame)
+    const PUMP_TIME = 0.5; // Seconds
+    const MOVE_TIME = 0.7; // Seconds
 
     // State
+    let lastTime = 0;
     let gameState = 'MENU'; 
     let gameMode = 'CLASSIC';
-    let score=0, mood=100, level=1, eventsCount=0, frameCount=0, autoWinTimer=0;
+    let score=0, mood=100, level=1, eventsCount=0, autoWinTimer=0;
     let workers=[], bollards=[], entities=[], particles=[];
     
     // Intro State
@@ -424,8 +425,11 @@
         startIntro();
     }
 
-    function tutLoop() {
+    function tutLoop(timestamp) {
         if (gameState !== 'TUTORIAL') return;
+        // Simple manual tick for tutorial (assume 16ms)
+        let dt = 0.016; 
+
         tutCtx.fillStyle = '#34495e'; tutCtx.fillRect(0, 0, 200, 120);
         tutCtx.strokeStyle = '#555'; tutCtx.lineWidth=4;
         tutCtx.beginPath(); tutCtx.moveTo(0,80); tutCtx.lineTo(200,80); tutCtx.stroke();
@@ -435,7 +439,7 @@
         tutCtx.fillText(step.e, 30, 80);
 
         if (tutAnimRunning && step.action === true) {
-            tutWorker.update(); 
+            tutWorker.update(dt); 
             let sprite = tutWorker.state === 'WORKING' ? ASSETS.workerBusy : ASSETS.worker;
             tutCtx.fillText(sprite, tutWorker.x, tutWorker.y);
 
@@ -467,7 +471,7 @@
             this.moveDir = (x < 400) ? -1 : 1; 
         }
         draw() {
-            if (gameState === 'INTRO' && introPhase < 1) return; // Hide before spawn
+            if (gameState === 'INTRO' && introPhase < 1) return; 
 
             let color = '#7f8c8d';
             if (this.state === 'OPEN') color = '#27ae60';
@@ -520,43 +524,50 @@
             this.targetBollard = bollard; this.targetX = bollard.x; this.targetY = bollard.y - 20; 
             this.state = 'MOVING'; bollard.workingWorker = this;
         }
-        update() {
+        update(dt) {
             const dx = this.targetX - this.x; const dy = this.targetY - this.y; const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist > WORKER_SPEED) { this.x += (dx/dist)*WORKER_SPEED; this.y += (dy/dist)*WORKER_SPEED; }
+            const step = WORKER_SPEED_BASE * dt;
+            
+            if (dist > step) { this.x += (dx/dist)*step; this.y += (dy/dist)*step; }
             else { this.x = this.targetX; this.y = this.targetY; if(this.targetBollard && this.state==='MOVING') this.state='WORKING'; }
 
             if (this.state === 'WORKING' && this.targetBollard) {
                 let effectiveMode = (gameState === 'TUTORIAL') ? 'AUGSBURG' : gameMode;
-                if (effectiveMode === 'AUGSBURG') this.handleAugsburg(this.targetBollard);
-                else this.handleClassic(this.targetBollard);
+                if (effectiveMode === 'AUGSBURG') this.handleAugsburg(this.targetBollard, dt);
+                else this.handleClassic(this.targetBollard, dt);
             }
         }
-        handleClassic(b) {
+        handleClassic(b, dt) {
             if(b.state==='CLOSED') b.state='OPENING'; if(b.state==='OPEN') b.state='CLOSING';
             if(b.state.includes('ING')) {
-                b.progress++; if(frameCount%5===0) playSound('pump');
+                b.progress += dt; 
+                // Don't play sound every frame
                 if(b.progress>=PUMP_TIME) { b.state = (b.state==='OPENING')?'OPEN':'CLOSED'; b.progress=0; this.finishJob(b); }
             }
         }
-        handleAugsburg(b) {
+        handleAugsburg(b, dt) {
             if (b.state === 'CLOSED') b.state = 'PUMP_UP'; else if (b.state === 'OPEN') b.state = 'MOVE_IN';
             
             if (b.state === 'PUMP_UP') {
-                b.progress++; if(frameCount%5===0) playSound('pump');
+                b.progress += dt;
                 if (b.progress >= PUMP_TIME) { b.progress = 0; b.state = 'MOVE_OUT'; }
             }
             else if (b.state === 'MOVE_OUT') {
-                b.progress++;
-                let moveStep = 60 * (1/MOVE_TIME); b.x += b.moveDir * moveStep; this.x = b.x;
+                b.progress += dt;
+                let moveDist = 60 * (dt/MOVE_TIME); 
+                b.x += b.moveDir * moveDist; 
+                this.x = b.x;
                 if (b.progress >= MOVE_TIME) { b.progress = 0; b.state = 'OPEN'; this.finishJob(b); }
             }
             else if (b.state === 'MOVE_IN') {
-                b.progress++;
-                let moveStep = 60 * (1/MOVE_TIME); b.x -= b.moveDir * moveStep; this.x = b.x;
+                b.progress += dt;
+                let moveDist = 60 * (dt/MOVE_TIME); 
+                b.x -= b.moveDir * moveDist; 
+                this.x = b.x;
                 if (b.progress >= MOVE_TIME) { b.progress = 0; b.x = b.originX; b.state = 'PUMP_DOWN'; }
             }
             else if (b.state === 'PUMP_DOWN') {
-                b.progress++; if(frameCount%5===0) playSound('pump');
+                b.progress += dt;
                 if (b.progress >= PUMP_TIME) { b.progress = 0; b.state = 'CLOSED'; this.finishJob(b); }
             }
         }
@@ -565,8 +576,8 @@
             if (gameState === 'INTRO' && introPhase < 2) return;
             ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             let sprite = this.state === 'WORKING' ? ASSETS.workerBusy : ASSETS.worker;
-            let offset = (this.state === 'MOVING' || this.state === 'WORKING') ? Math.sin(frameCount * 0.5) * 3 : 0;
-            ctx.fillText(sprite, this.x, this.y + offset);
+            // Removed visual bobbing to keep things smooth
+            ctx.fillText(sprite, this.x, this.y);
         }
     }
 
@@ -581,31 +592,42 @@
             else if (r < 0.55) { this.category = 'good'; this.data = ASSETS.good[Math.floor(Math.random()*ASSETS.good.length)]; }
             else { this.category = 'bad'; this.data = ASSETS.bad[Math.floor(Math.random()*ASSETS.bad.length)]; }
             
-            // Standardize Tram Frequency (35% in all modes)
             if (Math.random() < 0.35) { this.category = 'good'; this.data = ASSETS.good[0]; }
 
-            // Reduced Start Speed (0.8 base - was 1.0 or 0.7) and gentle slope
-            let baseSpeed = (0.8 + (level*0.05)) * (this.data.name==='Tram'?0.6:1);
-            this.speed = baseSpeed;
+            // Much slower start: 0.4 pixels/dt + 0.05 per level
+            // Base speed is now pixels per second (e.g. 50px/s)
+            let speedFactor = 50 + (level * 5); 
+            if (this.data.name === 'Tram') speedFactor *= 0.6; // Trams consistently slower
+            
+            this.speed = speedFactor;
             this.dead = false;
         }
-        update() {
+        update(dt) {
             if(this.dead) return;
-            this.x += this.speed * this.direction;
+            this.x += this.speed * this.direction * dt;
 
             // --- ZEN MODE LOGIC ---
             if (gameMode === 'HYDRAULIC' && !this.dead) {
+                // Find bollard on my track
                 let myBollard = bollards.find(b => Math.abs(b.y - this.y) < 20 && Math.abs(b.originX - (this.direction===1 ? LEFT_BOLLARD_X : RIGHT_BOLLARD_X)) < 20);
                 if (myBollard) {
-                    let dist = Math.abs(this.x - myBollard.originX);
-                    let needsOpen = (this.category === 'good');
-                    if (this.category === 'jump') needsOpen = false;
-
-                    if (dist < 180 && dist > 20) { 
-                        if (needsOpen && myBollard.state === 'CLOSED') myBollard.state = 'OPENING';
-                        if (!needsOpen && myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
+                    // Logic: Get the NEAREST entity approaching this bollard
+                    // If it is ME, act accordingly.
+                    // This prevents the bollard from closing on me if a bad guy is far behind
+                    
+                    let dist = (this.x - myBollard.originX) * -this.direction; // Positive distance when approaching
+                    
+                    if (dist > 0 && dist < 200) {
+                        if (this.category === 'good' && this.category !== 'jump') {
+                            if (myBollard.state === 'CLOSED') myBollard.state = 'OPENING';
+                        }
+                        if (this.category === 'bad') {
+                            if (myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
+                        }
                     }
-                    if (this.category === 'good' && dist > 60 && ((this.direction===1 && this.x > myBollard.originX) || (this.direction===-1 && this.x < myBollard.originX))) {
+                    // Close after passing
+                    let distBehind = (this.x - myBollard.originX) * this.direction;
+                    if (this.category === 'good' && distBehind > 50 && distBehind < 100) {
                          if (myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
                     }
                 }
@@ -620,7 +642,7 @@
 
             if(this.category!=='jump') {
                 bollards.filter(b=>Math.abs(b.y-this.y)<20).forEach(b=>{
-                    if(Math.abs(this.x-b.x)<25 && b.state!=='OPEN') this.crash();
+                    if(Math.abs(this.x-b.x)<30 && b.state!=='OPEN') this.crash();
                 });
             }
             if(this.x>canvas.width+60||this.x<-60) { this.dead=true; this.exit(); }
@@ -645,13 +667,13 @@
         }
     }
 
-    function createExplosion(x,y,c) { for(let i=0;i<5;i++) particles.push({x:x,y:y,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*10,life:1,char:c,type:'p'}); }
-    function createFloatingText(t,x,y,c) { particles.push({x:x,y:y,text:t,color:c,life:1,vy:-1.5,type:'t'}); }
+    function createExplosion(x,y,c) { for(let i=0;i<5;i++) particles.push({x:x,y:y,vx:(Math.random()-0.5)*100,vy:(Math.random()-0.5)*100,life:1,char:c,type:'p'}); }
+    function createFloatingText(t,x,y,c) { particles.push({x:x,y:y,text:t,color:c,life:1,vy:-50,type:'t'}); }
     function checkMood() { document.getElementById('mood-fill').style.width=mood+'%'; if(mood<=0) gameOver("Stimmung am Ende!"); }
 
     function togglePause() {
         if (gameState==='PLAY') { gameState='PAUSE'; document.getElementById('pause-screen').classList.remove('hidden'); }
-        else if (gameState==='PAUSE') { gameState='PLAY'; document.getElementById('pause-screen').classList.add('hidden'); }
+        else if (gameState==='PAUSE') { gameState='PLAY'; document.getElementById('pause-screen').classList.add('hidden'); lastTime = performance.now(); }
     }
 
     /* --- INTRO & GAME LOOP --- */
@@ -671,6 +693,7 @@
         introPhase = 0;
         santaX = -100;
         playSound('success');
+        lastTime = performance.now();
         requestAnimationFrame(gameLoop);
     }
 
@@ -689,7 +712,16 @@
         ctx.beginPath(); ctx.arc(450, 150, 3, 0, Math.PI*2); ctx.fill();
     }
 
-    function gameLoop() {
+    let spawnTimer = 0;
+
+    function gameLoop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        const dt = (timestamp - lastTime) / 1000; // seconds
+        lastTime = timestamp;
+
+        // Cap dt to prevent huge jumps if tab was inactive
+        const safeDt = Math.min(dt, 0.1);
+
         if(gameState==='PLAY' || gameState==='HYDRAULIC_RUN' || gameState==='INTRO') {
             ctx.clearRect(0,0,canvas.width,canvas.height);
             // Draw BG
@@ -701,20 +733,17 @@
 
             // Intro Animation Logic
             if(gameState === 'INTRO') {
-                // Phase 0: Santa flies
                 ctx.font='60px Arial'; ctx.fillText('🎅🛷', santaX, 100);
-                santaX += 5;
-                if(santaX > 400 && introPhase === 0) { introPhase = 1; playSound('pump'); } // Drop Bollards
-                if(santaX > 900) introPhase = 2; // Workers enter
+                santaX += 200 * safeDt;
+                if(santaX > 400 && introPhase === 0) { introPhase = 1; playSound('pump'); } 
+                if(santaX > 900) introPhase = 2; 
 
-                // Phase 2: Workers walk
                 if (introPhase === 2) {
                     workers.forEach(w => {
                         w.targetX = w.finalX;
-                        w.update();
+                        w.update(safeDt);
                         w.draw();
                     });
-                    // Check if arrived
                     if (Math.abs(workers[0].x - 350) < 5 && Math.abs(workers[1].x - 450) < 5) {
                         gameState = 'PLAY';
                         createFloatingText("LOS GEHT'S!", 400, 250, '#f1c40f');
@@ -723,29 +752,39 @@
             } 
             else {
                 // Game Logic
-                frameCount++;
-                if(gameMode==='HYDRAULIC' && ++autoWinTimer > 10800) { gameOver("Hydraulik-Sieg! Alle happy."); document.getElementById('go-title').innerText="GEWONNEN"; }
+                if(gameMode==='HYDRAULIC') {
+                    autoWinTimer += safeDt;
+                    if(autoWinTimer > 180) { gameOver("Hydraulik-Sieg! Alle happy."); document.getElementById('go-title').innerText="GEWONNEN"; }
+                }
                 
-                // Slow Spawn: 300 Frames base (5s)
-                let rate = Math.max(60, 300-(level*15));
-                if(frameCount%rate===0) { entities.push(new GameEntity()); eventsCount++; if(eventsCount%10===0){level++; createFloatingText("LEVEL UP!",400,250,'#e67e22'); playSound('levelup');}}
+                // Spawn Logic (Time based)
+                spawnTimer += safeDt;
+                // Base spawn rate: every 5 seconds, minus 0.2s per level (min 2s)
+                let spawnInterval = Math.max(2.0, 5.0 - (level * 0.2));
+                
+                if (spawnTimer > spawnInterval) {
+                    spawnTimer = 0;
+                    entities.push(new GameEntity()); 
+                    eventsCount++; 
+                    if(eventsCount%10===0){level++; createFloatingText("LEVEL UP!",400,250,'#e67e22'); playSound('levelup');}
+                }
 
-                entities.forEach((e,i)=>{e.update();e.draw();if(e.dead)entities.splice(i,1)});
-                if(gameMode!=='HYDRAULIC') workers.forEach(w=>{w.update();w.draw()});
+                entities.forEach((e,i)=>{e.update(safeDt);e.draw();if(e.dead)entities.splice(i,1)});
+                if(gameMode!=='HYDRAULIC') workers.forEach(w=>{w.update(safeDt);w.draw()});
             }
 
             // Always Draw Bollards (visible based on phase)
             bollards.forEach(b=>{
                 if(gameMode==='HYDRAULIC') {
-                    if(b.state==='OPENING'){b.progress+=2;if(b.progress>=PUMP_TIME){b.state='OPEN';b.progress=0;}}
-                    if(b.state==='CLOSING'){b.progress+=2;if(b.progress>=PUMP_TIME){b.state='CLOSED';b.progress=0;}}
+                    if(b.state==='OPENING'){b.progress+=safeDt;if(b.progress>=PUMP_TIME){b.state='OPEN';b.progress=0;}}
+                    if(b.state==='CLOSING'){b.progress+=safeDt;if(b.progress>=PUMP_TIME){b.state='CLOSED';b.progress=0;}}
                 }
                 b.draw();
             });
 
             particles.forEach((p,i)=>{
-                p.type==='p' ? (p.x+=p.vx, p.y+=p.vy, ctx.font='20px Arial', ctx.fillText(p.char,p.x,p.y)) : (p.y+=p.vy, ctx.font='12px "Press Start 2P"', ctx.fillStyle=p.color, ctx.fillText(p.text,p.x,p.y));
-                p.life-=0.05; ctx.globalAlpha=p.life; if(p.life<=0)particles.splice(i,1); ctx.globalAlpha=1;
+                p.type==='p' ? (p.x+=p.vx*safeDt, p.y+=p.vy*safeDt, ctx.font='20px Arial', ctx.fillText(p.char,p.x,p.y)) : (p.y+=p.vy*safeDt, ctx.font='12px "Press Start 2P"', ctx.fillStyle=p.color, ctx.fillText(p.text,p.x,p.y));
+                p.life-=1.0 * safeDt; ctx.globalAlpha=Math.max(0, p.life); if(p.life<=0)particles.splice(i,1); ctx.globalAlpha=1;
             });
 
             document.getElementById('score-display').innerText=Math.floor(score);
