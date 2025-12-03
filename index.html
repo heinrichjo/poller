@@ -214,17 +214,17 @@
                 </div>
                 <div class="rules-column">
                     <h3 style="color:#e74c3c">STOPPEN (POLLER HOCH)</h3>
-                    <div class="rules-item"><span class="emoji-icon">🍺</span> Betrunkene</div>
-                    <div class="rules-item"><span class="emoji-icon">🗣️</span> Schwurbler</div>
-                    <div class="rules-item"><span class="emoji-icon">👺</span> Diebe</div>
-                    <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame</div>
+                    <div class="rules-item"><span class="emoji-icon">🍺</span> Betrunkene (Markt)</div>
+                    <div class="rules-item"><span class="emoji-icon">🗣️</span> Schwurbler (Markt)</div>
+                    <div class="rules-item"><span class="emoji-icon">👺</span> Diebe (Markt)</div>
+                    <div class="rules-item"><span class="emoji-icon">👹</span> Griesgrame (Markt)</div>
                 </div>
             </div>
 
             <p>
                 <strong>MISSION:</strong><br>
                 Klicke auf die Poller, um sie zu bewegen.<br>
-                Lebensmittel & Geschenke bleiben im Markt.<br>
+                Lebensmittel, Geschenke UND Schurken stoppen im Markt.<br>
                 Trams und Rentiere (🦌) müssen durchfahren!
             </p>
             <button id="start-btn" class="blink">DIENST ANTRETEN</button>
@@ -490,11 +490,16 @@
 
             this.x += this.speed * this.direction;
 
-            // MARKET ARRIVAL
-            if (this.category === 'good' && this.data.name !== 'Tram') {
+            // MARKET ARRIVAL CHECK
+            // Good items (except Tram) AND Bad items now target the market center
+            if ((this.category === 'good' && this.data.name !== 'Tram') || this.category === 'bad') {
                 let distToCenter = Math.abs(this.x - MARKET_CENTER_X);
                 if (distToCenter < 10) {
-                    this.handleMarketArrival();
+                    if (this.category === 'good') {
+                        this.handleMarketArrival();
+                    } else {
+                        this.handleMarketIntrusion();
+                    }
                     return;
                 }
             }
@@ -530,6 +535,16 @@
             checkMood();
         }
 
+        handleMarketIntrusion() {
+            this.dead = true;
+            mood -= 20;
+            score -= 100; // Deduct Score
+            if(score < 0) score = 0;
+            playSound('crash');
+            createFloatingText("EINGEDRUNGEN (-100)", this.x, this.y - 30, '#e74c3c');
+            checkMood();
+        }
+
         handleCrash(isBollardHit) {
             this.dead = true;
             createExplosion(this.x, this.y, '💥');
@@ -555,12 +570,12 @@
                 score += 100;
                 createFloatingText("TRAM FREI!", this.x - (50*this.direction), this.y, '#2ecc71');
             } else if (this.category === 'bad') {
-                // PENALTY LOGIC HERE
+                // This shouldn't happen anymore as they stop at market, but safe fallback
                 mood -= 20;
-                score -= 100; // Deduct Score
-                if(score < 0) score = 0; // Optional clamping
+                score -= 100; 
+                if(score < 0) score = 0; 
                 playSound('crash');
-                createFloatingText("EINGEDRUNGEN (-100)", this.x - (50*this.direction), this.y, '#e74c3c');
+                createFloatingText("ENTKOMMEN (-100)", this.x - (50*this.direction), this.y, '#e74c3c');
                 checkMood();
             } else {
                 score += 10;
