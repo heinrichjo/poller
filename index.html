@@ -81,10 +81,15 @@
         .weihnachts-meter { width: 150px; height: 15px; background: #555; border: 2px solid white; position: relative; }
         .meter-fill { width: 100%; height: 100%; background: #27ae60; transition: width 0.2s; }
 
-        #pause-btn {
-            background: #f39c12; border: 2px solid #fff; color: white;
+        .btn-group { display: flex; gap: 10px; }
+
+        .hud-btn {
+            border: 2px solid #fff; color: white;
             padding: 5px 10px; font-size: 10px; cursor: pointer; pointer-events: auto;
+            font-family: 'Press Start 2P', cursive;
         }
+        #pause-btn { background: #f39c12; }
+        #quit-btn { background: #c0392b; }
 
         /* NEWSTICKER */
         #news-ticker {
@@ -122,12 +127,12 @@
         
         .mode-select { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
 
-        button {
+        button.main-btn {
             background: #27ae60; color: white; border: none; padding: 10px 20px;
             font-family: 'Press Start 2P', cursive; font-size: 12px;
             cursor: pointer; border-bottom: 4px solid #1e8449; margin: 5px;
         }
-        button:active { transform: translateY(4px); border-bottom: none; }
+        button.main-btn:active { transform: translateY(4px); border-bottom: none; }
         button.secondary { background: #7f8c8d; border-bottom: 4px solid #555; }
         button.danger { background: #c0392b; border-bottom: 4px solid #922b21; }
 
@@ -165,9 +170,11 @@
         .tutorial-text { font-size: 12px; color: #fff; margin-bottom: 15px; display: block; min-height: 40px;}
         .tut-feedback { font-size: 12px; font-weight: bold; margin-bottom: 10px; min-height: 20px; }
 
-        /* VERSION SWITCH */
-        #version-switch {
-            position: absolute; bottom: 10px; left: 10px; font-size: 8px; color: #555; text-decoration: underline; cursor: pointer;
+        /* CREATOR INFO */
+        .creator-info {
+            position: absolute; bottom: 10px; left: 0; width: 100%;
+            text-align: center; font-size: 8px; color: #7f8c8d;
+            margin-top: 20px;
         }
 
     </style>
@@ -185,7 +192,10 @@
                     LAUNE:
                     <div class="weihnachts-meter"><div id="mood-fill" class="meter-fill"></div></div>
                 </div>
-                <button id="pause-btn">PAUSE</button>
+                <div class="btn-group">
+                    <button id="pause-btn" class="hud-btn">PAUSE</button>
+                    <button id="quit-btn" class="hud-btn">X</button>
+                </div>
             </div>
         </div>
 
@@ -229,12 +239,14 @@
                 Tipp: Handy quer halten!
             </p>
             <div class="mode-select">
-                <button onclick="checkTutorial('CLASSIC')">KLASSIK</button>
-                <button onclick="checkTutorial('HYDRAULIC')">HYDRAULISCH</button>
-                <button onclick="checkTutorial('AUGSBURG')">AUGSBURG</button>
+                <button class="main-btn" onclick="checkTutorial('AUGSBURG')">AUGSBURG</button>
+                <button class="main-btn" onclick="checkTutorial('CLASSIC')">KLASSIK</button>
+                <button class="main-btn" onclick="checkTutorial('HYDRAULIC')">AUTOMATIK</button>
             </div>
-            <!-- Optional Desktop Switch Link -->
-            <div id="version-switch" onclick="alert('Diese Version ist responsive und funktioniert auch am Desktop!')">Desktop-Version?</div>
+            
+            <div class="creator-info">
+                Erstellt von Johannes Heinrich mit der Unterstützung von Gemini - 2025
+            </div>
         </div>
 
         <!-- TUTORIAL SCREEN -->
@@ -247,11 +259,11 @@
                 <div id="tut-feedback" class="tut-feedback"></div>
                 
                 <div id="tut-controls">
-                    <button id="tut-btn-open" onclick="handleTutorialChoice(true)">POLLERN (AUF)</button>
-                    <button id="tut-btn-close" class="danger" onclick="handleTutorialChoice(false)">BLOCKIEREN (ZU)</button>
+                    <button class="main-btn" id="tut-btn-open" onclick="handleTutorialChoice(true)">POLLERN (AUF)</button>
+                    <button class="main-btn danger" id="tut-btn-close" onclick="handleTutorialChoice(false)">BLOCKIEREN (ZU)</button>
                 </div>
                 <div style="margin-top:10px">
-                    <button class="secondary" onclick="skipTutorial()">DIENST BEGINNEN</button>
+                    <button class="main-btn secondary" onclick="skipTutorial()">DIENST BEGINNEN</button>
                 </div>
             </div>
         </div>
@@ -260,8 +272,8 @@
         <div id="pause-screen" class="screen-overlay hidden">
             <h1>PAUSE</h1>
             <p>Die Pumper machen Brotzeit.</p>
-            <button onclick="togglePause()">WEITERMACHEN</button>
-            <button class="secondary" onclick="location.reload()">BEENDEN</button>
+            <button class="main-btn" onclick="togglePause()">WEITERMACHEN</button>
+            <button class="main-btn secondary" onclick="location.reload()">BEENDEN</button>
         </div>
 
         <!-- GAME OVER SCREEN -->
@@ -269,7 +281,7 @@
             <h1 id="go-title">SCHICHTENDE!</h1>
             <h2 id="final-reason">...</h2>
             <p>Score: <span id="final-score">0</span></p>
-            <button onclick="location.reload()">NEUER DIENST</button>
+            <button class="main-btn" onclick="location.reload()">NEUER DIENST</button>
         </div>
     </div>
 </div>
@@ -312,19 +324,21 @@
     const TRACK_Y_1 = 180, TRACK_Y_2 = 350;
     const LEFT_BOLLARD_X = 200, RIGHT_BOLLARD_X = 600;
     const MARKET_CENTER_X = 400;
-    const WORKER_SPEED_BASE = 250; // Pixels per second (not frame)
-    const PUMP_TIME = 0.5; // Seconds
-    const MOVE_TIME = 0.7; // Seconds
+    const WORKER_SPEED_BASE = 250; 
+    const PUMP_TIME = 0.5; 
+    const MOVE_TIME = 0.7; 
+    // Increased base speed for Game Entities because time-based movement needs px/sec
+    const ENTITY_SPEED_BASE = 80; // 80 pixels per second start speed
 
     // State
     let lastTime = 0;
     let gameState = 'MENU'; 
     let gameMode = 'CLASSIC';
-    let score=0, mood=100, level=1, eventsCount=0, autoWinTimer=0;
+    let score=0, mood=100, level=1, eventsCount=0, frameCount=0, autoWinTimer=0;
     let workers=[], bollards=[], entities=[], particles=[];
     
     // Intro State
-    let introPhase = 0; // 0: Santa, 1: Bollards, 2: Workers
+    let introPhase = 0; 
     let santaX = -100;
 
     // Assets
@@ -384,7 +398,6 @@
         document.getElementById('tut-text').innerText = step.t;
         document.getElementById('tut-feedback').innerText = "";
         
-        // Reset Mini Sim
         tutBollard = new Bollard(100, 80, 0); 
         tutWorker = new Worker(0, 150, 80);
         tutWorker.state = 'IDLE';
@@ -403,7 +416,7 @@
             tutAnimRunning = true;
             if (choice === true) {
                 tutWorker.assignTask(tutBollard);
-                let prevMode = gameMode; gameMode = 'AUGSBURG'; // Demo animation
+                let prevMode = gameMode; gameMode = 'AUGSBURG'; 
                 setTimeout(() => { gameMode = prevMode; nextTutStep(); }, 2000); 
             } else setTimeout(nextTutStep, 1000);
         } else {
@@ -427,7 +440,6 @@
 
     function tutLoop(timestamp) {
         if (gameState !== 'TUTORIAL') return;
-        // Simple manual tick for tutorial (assume 16ms)
         let dt = 0.016; 
 
         tutCtx.fillStyle = '#34495e'; tutCtx.fillRect(0, 0, 200, 120);
@@ -441,7 +453,13 @@
         if (tutAnimRunning && step.action === true) {
             tutWorker.update(dt); 
             let sprite = tutWorker.state === 'WORKING' ? ASSETS.workerBusy : ASSETS.worker;
-            tutCtx.fillText(sprite, tutWorker.x, tutWorker.y);
+            // Tut worker needs Y offset too in Augsburg
+            let wY = tutWorker.y;
+            if (gameMode === 'AUGSBURG' && tutWorker.targetBollard) {
+                 wY = tutWorker.targetBollard.y + tutWorker.targetBollard.sideOffset; 
+                 if(tutWorker.targetBollard.sideOffset !== 0) wY += 20; 
+            }
+            tutCtx.fillText(sprite, tutWorker.x, wY);
 
             let b = tutBollard;
             let bSprite = ASSETS.bollardClosed;
@@ -452,7 +470,7 @@
             if (b.state === 'PUMP_UP') liftY = -10;
             if (b.state.includes('MOVE')) liftY = -10;
             
-            tutCtx.fillText(bSprite, b.x, b.y + liftY);
+            tutCtx.fillText(bSprite, b.x, b.y + b.sideOffset + liftY);
         } else {
             tutCtx.fillText(ASSETS.worker, 150, 80);
             tutCtx.fillText(ASSETS.bollardClosed, 100, 80);
@@ -467,8 +485,8 @@
             this.state = 'CLOSED'; 
             this.progress = 0;
             this.workingWorker = null;
-            this.offsetX = 0; 
-            this.moveDir = (x < 400) ? -1 : 1; 
+            this.sideOffset = 0; // Vertical offset for Augsburg mode
+            this.moveDir = 1; 
         }
         draw() {
             if (gameState === 'INTRO' && introPhase < 1) return; 
@@ -486,7 +504,7 @@
                 ctx.fillRect(this.originX-20, this.y-65, 40*(this.progress/maxP), 6);
             }
 
-            let drawX = this.x;
+            let drawY = this.y + this.sideOffset;
             let sprite = ASSETS.bollardClosed;
 
             if (this.state === 'OPEN') {
@@ -508,7 +526,7 @@
                 else if (this.state === 'PUMP_DOWN') liftY = -15 * (1-(this.progress/PUMP_TIME));
                 else if (this.state !== 'CLOSED' && this.state !== 'OPEN') liftY = -15;
             }
-            ctx.fillText(sprite, drawX, this.y + liftY);
+            ctx.fillText(sprite, this.x, drawY + liftY);
 
             ctx.fillStyle = '#ecf0f1'; ctx.font = '8px "Press Start 2P"';
             ctx.fillText((this.state==='CLOSED')?"ZU":(this.state==='OPEN'?"AUF":"..."), this.originX, this.y+30);
@@ -541,30 +559,29 @@
             if(b.state==='CLOSED') b.state='OPENING'; if(b.state==='OPEN') b.state='CLOSING';
             if(b.state.includes('ING')) {
                 b.progress += dt; 
-                // Don't play sound every frame
                 if(b.progress>=PUMP_TIME) { b.state = (b.state==='OPENING')?'OPEN':'CLOSED'; b.progress=0; this.finishJob(b); }
             }
         }
         handleAugsburg(b, dt) {
-            if (b.state === 'CLOSED') b.state = 'PUMP_UP'; else if (b.state === 'OPEN') b.state = 'MOVE_IN';
+            if (b.state === 'CLOSED') b.state = 'PUMP_UP'; else if (b.state === 'OPEN') b.state = 'MOVE_BACK';
             
             if (b.state === 'PUMP_UP') {
                 b.progress += dt;
-                if (b.progress >= PUMP_TIME) { b.progress = 0; b.state = 'MOVE_OUT'; }
+                if (b.progress >= PUMP_TIME) { b.progress = 0; b.state = 'MOVE_SIDE'; }
             }
-            else if (b.state === 'MOVE_OUT') {
+            else if (b.state === 'MOVE_SIDE') {
                 b.progress += dt;
-                let moveDist = 60 * (dt/MOVE_TIME); 
-                b.x += b.moveDir * moveDist; 
-                this.x = b.x;
+                let moveDist = 50 * (dt/MOVE_TIME); 
+                b.sideOffset += moveDist; // Move Down
+                this.y = b.y + b.sideOffset - 20; // Worker follows Y
                 if (b.progress >= MOVE_TIME) { b.progress = 0; b.state = 'OPEN'; this.finishJob(b); }
             }
-            else if (b.state === 'MOVE_IN') {
+            else if (b.state === 'MOVE_BACK') {
                 b.progress += dt;
-                let moveDist = 60 * (dt/MOVE_TIME); 
-                b.x -= b.moveDir * moveDist; 
-                this.x = b.x;
-                if (b.progress >= MOVE_TIME) { b.progress = 0; b.x = b.originX; b.state = 'PUMP_DOWN'; }
+                let moveDist = 50 * (dt/MOVE_TIME); 
+                b.sideOffset -= moveDist; // Move Up
+                this.y = b.y + b.sideOffset - 20; 
+                if (b.progress >= MOVE_TIME) { b.progress = 0; b.sideOffset = 0; b.state = 'PUMP_DOWN'; }
             }
             else if (b.state === 'PUMP_DOWN') {
                 b.progress += dt;
@@ -576,7 +593,6 @@
             if (gameState === 'INTRO' && introPhase < 2) return;
             ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             let sprite = this.state === 'WORKING' ? ASSETS.workerBusy : ASSETS.worker;
-            // Removed visual bobbing to keep things smooth
             ctx.fillText(sprite, this.x, this.y);
         }
     }
@@ -594,10 +610,9 @@
             
             if (Math.random() < 0.35) { this.category = 'good'; this.data = ASSETS.good[0]; }
 
-            // Much slower start: 0.4 pixels/dt + 0.05 per level
-            // Base speed is now pixels per second (e.g. 50px/s)
-            let speedFactor = 50 + (level * 5); 
-            if (this.data.name === 'Tram') speedFactor *= 0.6; // Trams consistently slower
+            // Fixed Base Speed Logic (Pixels Per Second)
+            // Start at 80, add 5 per level. Trams 60% of speed.
+            let speedFactor = (ENTITY_SPEED_BASE + (level * 5)) * (this.data.name==='Tram'?0.6:1.0); 
             
             this.speed = speedFactor;
             this.dead = false;
@@ -606,26 +621,20 @@
             if(this.dead) return;
             this.x += this.speed * this.direction * dt;
 
-            // --- ZEN MODE LOGIC ---
+            // --- ZEN MODE AI ---
             if (gameMode === 'HYDRAULIC' && !this.dead) {
-                // Find bollard on my track
                 let myBollard = bollards.find(b => Math.abs(b.y - this.y) < 20 && Math.abs(b.originX - (this.direction===1 ? LEFT_BOLLARD_X : RIGHT_BOLLARD_X)) < 20);
                 if (myBollard) {
-                    // Logic: Get the NEAREST entity approaching this bollard
-                    // If it is ME, act accordingly.
-                    // This prevents the bollard from closing on me if a bad guy is far behind
-                    
-                    let dist = (this.x - myBollard.originX) * -this.direction; // Positive distance when approaching
-                    
-                    if (dist > 0 && dist < 200) {
-                        if (this.category === 'good' && this.category !== 'jump') {
-                            if (myBollard.state === 'CLOSED') myBollard.state = 'OPENING';
-                        }
-                        if (this.category === 'bad') {
-                            if (myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
-                        }
+                    let dist = (this.x - myBollard.originX) * -this.direction; // Dist to bollard
+                    let needsOpen = (this.category === 'good');
+                    if (this.category === 'jump') needsOpen = false;
+
+                    // Open/Close ahead
+                    if (dist > 20 && dist < 180) {
+                        if (needsOpen && myBollard.state === 'CLOSED') myBollard.state = 'OPENING';
+                        if (!needsOpen && myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
                     }
-                    // Close after passing
+                    // Close behind
                     let distBehind = (this.x - myBollard.originX) * this.direction;
                     if (this.category === 'good' && distBehind > 50 && distBehind < 100) {
                          if (myBollard.state === 'OPEN') myBollard.state = 'CLOSING';
@@ -642,7 +651,8 @@
 
             if(this.category!=='jump') {
                 bollards.filter(b=>Math.abs(b.y-this.y)<20).forEach(b=>{
-                    if(Math.abs(this.x-b.x)<30 && b.state!=='OPEN') this.crash();
+                    // Check collision against ORIGIN (where they try to pass)
+                    if(Math.abs(this.x-b.originX)<30 && b.state!=='OPEN') this.crash();
                 });
             }
             if(this.x>canvas.width+60||this.x<-60) { this.dead=true; this.exit(); }
@@ -651,7 +661,7 @@
         intrude() { this.dead=true; mood-=20; score=Math.max(0,score-100); playSound('crash'); createFloatingText("OHJE! -100",this.x,this.y-30,'#e74c3c'); checkMood(); }
         crash() { 
             this.dead=true; createExplosion(this.x,this.y,'💥'); 
-            if(this.category==='good') { mood-=15; playSound('crash'); if(this.data.name==='Tram') gameOver("Tramunfall!"); }
+            if(this.category==='good') { mood-=15; playSound('crash'); if(this.data.name==='Tram') gameOver("Tramunfall! Verkehr tot."); }
             else { score+=50; playSound('success'); createFloatingText("STOP!",this.x,this.y-30,'#2ecc71'); }
             checkMood();
         }
@@ -682,9 +692,7 @@
             new Bollard(LEFT_BOLLARD_X, TRACK_Y_1, 0), new Bollard(RIGHT_BOLLARD_X, TRACK_Y_1, 1),
             new Bollard(LEFT_BOLLARD_X, TRACK_Y_2, 2), new Bollard(RIGHT_BOLLARD_X, TRACK_Y_2, 3)
         ];
-        // Workers off screen
         workers = [ new Worker(1, -50, 250), new Worker(2, 850, 250) ];
-        // Final targets
         workers[0].finalX = 350; workers[1].finalX = 450;
         
         entities = []; score=0; mood=100; level=1; eventsCount=0; autoWinTimer=0;
@@ -699,15 +707,8 @@
 
     function drawMarket() {
         ctx.fillStyle='#2c3e50'; ctx.fillRect(LEFT_BOLLARD_X,0,RIGHT_BOLLARD_X-LEFT_BOLLARD_X,canvas.height);
-        
-        // Tree
-        ctx.font='80px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('🎄', 400, 250);
-        // Stalls
-        ctx.font='50px Arial';
-        ctx.fillText('🛖', 300, 270);
-        ctx.fillText('🛖', 500, 270);
-        // Snow
+        ctx.font='80px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🎄', 400, 250);
+        ctx.font='50px Arial'; ctx.fillText('🛖', 300, 270); ctx.fillText('🛖', 500, 270);
         ctx.fillStyle='white'; ctx.beginPath(); ctx.arc(350, 100, 2, 0, Math.PI*2); ctx.fill();
         ctx.beginPath(); ctx.arc(450, 150, 3, 0, Math.PI*2); ctx.fill();
     }
@@ -716,22 +717,16 @@
 
     function gameLoop(timestamp) {
         if (!lastTime) lastTime = timestamp;
-        const dt = (timestamp - lastTime) / 1000; // seconds
+        const dt = (timestamp - lastTime) / 1000; 
         lastTime = timestamp;
-
-        // Cap dt to prevent huge jumps if tab was inactive
         const safeDt = Math.min(dt, 0.1);
 
         if(gameState==='PLAY' || gameState==='HYDRAULIC_RUN' || gameState==='INTRO') {
             ctx.clearRect(0,0,canvas.width,canvas.height);
-            // Draw BG
             ctx.fillStyle='#34495e'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            
-            drawMarket(); // Draw Center Market
-
+            drawMarket(); 
             ctx.lineWidth=6; ctx.strokeStyle='#555'; [TRACK_Y_1,TRACK_Y_2].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();});
 
-            // Intro Animation Logic
             if(gameState === 'INTRO') {
                 ctx.font='60px Arial'; ctx.fillText('🎅🛷', santaX, 100);
                 santaX += 200 * safeDt;
@@ -739,11 +734,7 @@
                 if(santaX > 900) introPhase = 2; 
 
                 if (introPhase === 2) {
-                    workers.forEach(w => {
-                        w.targetX = w.finalX;
-                        w.update(safeDt);
-                        w.draw();
-                    });
+                    workers.forEach(w => { w.targetX = w.finalX; w.update(safeDt); w.draw(); });
                     if (Math.abs(workers[0].x - 350) < 5 && Math.abs(workers[1].x - 450) < 5) {
                         gameState = 'PLAY';
                         createFloatingText("LOS GEHT'S!", 400, 250, '#f1c40f');
@@ -751,15 +742,12 @@
                 }
             } 
             else {
-                // Game Logic
                 if(gameMode==='HYDRAULIC') {
                     autoWinTimer += safeDt;
                     if(autoWinTimer > 180) { gameOver("Hydraulik-Sieg! Alle happy."); document.getElementById('go-title').innerText="GEWONNEN"; }
                 }
                 
-                // Spawn Logic (Time based)
                 spawnTimer += safeDt;
-                // Base spawn rate: every 5 seconds, minus 0.2s per level (min 2s)
                 let spawnInterval = Math.max(2.0, 5.0 - (level * 0.2));
                 
                 if (spawnTimer > spawnInterval) {
@@ -773,7 +761,6 @@
                 if(gameMode!=='HYDRAULIC') workers.forEach(w=>{w.update(safeDt);w.draw()});
             }
 
-            // Always Draw Bollards (visible based on phase)
             bollards.forEach(b=>{
                 if(gameMode==='HYDRAULIC') {
                     if(b.state==='OPENING'){b.progress+=safeDt;if(b.progress>=PUMP_TIME){b.state='OPEN';b.progress=0;}}
@@ -823,8 +810,11 @@
         document.getElementById('game-over-screen').classList.remove('hidden');
     }
 
-    // Init
+    // Buttons
     document.getElementById('pause-btn').addEventListener('click', togglePause);
+    document.getElementById('quit-btn').addEventListener('click', () => location.reload()); // Quit
+    
+    // Canvas
     canvas.addEventListener('mousedown', handleInput);
     canvas.addEventListener('touchstart', handleInput, {passive: false});
     ctx.fillStyle='#2c3e50'; ctx.fillRect(0,0,800,500);
